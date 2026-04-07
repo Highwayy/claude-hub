@@ -1172,12 +1172,18 @@ class SessionControl : Panel
 
         if (data.state == "idle") {
             statusLbl.Text = "Idle";
-            _flashBorder = false;
+            if (_flashBorder) {
+                _flashBorder = false;
+                this.Invalidate(); // 立即清除边框
+            }
             statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
         }
         else if (data.state == "waiting") {
             statusLbl.Text = "Waiting";
-            _flashBorder = true;
+            if (!_flashBorder) {
+                _flashBorder = true;
+                this.Invalidate(); // 立即开始闪烁
+            }
             statusLbl.ForeColor = Color.FromArgb(243, 156, 18); // 橙色
             taskLbl.Text = " " + taskText;
         }
