@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -17,6 +18,8 @@ class ClaudeMonitor : Form
     private System.Windows.Forms.Timer heartbeatTimer;
     private List<SessionControl> sessionControls = new List<SessionControl>();
     private Button pinBtn;
+    private Label waitingLabel;
+    private bool hasWaitingSession = false;
     private int errorCount = 0;
     private const int MaxErrors = 5;
     private string configFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "claude-monitor", "config.json");
@@ -223,7 +226,18 @@ class ClaudeMonitor : Form
         closeBtn.FlatAppearance.BorderSize = 0;
         closeBtn.Click += (s, e) => { timer.Stop(); animationTimer.Stop(); heartbeatTimer.Stop(); SaveWindowPosition(); this.Close(); };
 
-        header.Controls.AddRange(new Control[] { closeBtn, pinBtn, title });
+        // Waiting 提示标签（初始隐藏）
+        waitingLabel = new Label();
+        waitingLabel.Text = " ⏳ Waiting for Input";
+        waitingLabel.Width = 150;
+        waitingLabel.Height = 24;
+        waitingLabel.Dock = DockStyle.Left;
+        waitingLabel.BackColor = Color.FromArgb(243, 156, 18);
+        waitingLabel.ForeColor = Color.White;
+        waitingLabel.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+        waitingLabel.Visible = false;
+
+        header.Controls.AddRange(new Control[] { waitingLabel, closeBtn, pinBtn, title });
 
         contentPanel = new Panel();
         contentPanel.Dock = DockStyle.Fill;
@@ -601,6 +615,10 @@ class ClaudeMonitor : Form
         int windowHeight = 24 + totalHeight + 10;
         this.Height = Math.Min(windowHeight, 500);
         Log("Window height=" + windowHeight);
+
+        // 检测是否有 waiting 状态的会话
+        hasWaitingSession = sessions.Any(s => s.state == "waiting");
+        waitingLabel.Visible = hasWaitingSession;
     }
 
     private void SessionControlMouseClick(object sender, MouseEventArgs e)
