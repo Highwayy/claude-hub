@@ -244,17 +244,9 @@ class ClaudeMonitor : Form
         contentPanel.BackColor = Color.FromArgb(26, 26, 46);
         contentPanel.MouseDown += FormMouseDown;
 
-        ContextMenuStrip contextMenu = new ContextMenuStrip();
-        ToolStripMenuItem resetItem = new ToolStripMenuItem("Reset Status");
-        resetItem.Click += (s, e) => ResetStatus();
-        ToolStripMenuItem copyItem = new ToolStripMenuItem("Copy Task");
-        copyItem.Click += (s, e) => CopyCurrentTask();
-        ToolStripMenuItem linkItem = new ToolStripMenuItem("Link to Active Window");
-        linkItem.Click += (s, e) => LinkActiveWindow();
-        ToolStripMenuItem flashItem = new ToolStripMenuItem("Flash Linked Window");
-        flashItem.Click += (s, e) => FlashLinkedWindow();
-        contextMenu.Items.AddRange(new ToolStripItem[] { resetItem, copyItem, linkItem, flashItem });
-        this.ContextMenuStrip = contextMenu;
+        // Session 右键菜单（在 SessionControl 上显示）
+        // 主窗口无右键菜单
+        this.ContextMenuStrip = null;
 
         this.Controls.AddRange(new Control[] { contentPanel, header });
         this.MouseDown += FormMouseDown;
@@ -409,36 +401,6 @@ class ClaudeMonitor : Form
             Log("SaveWindowPosition: position " + x + "," + y + " not in any screen, not saving");
         }
         catch (Exception ex) { Log("SaveWindowPosition error: " + ex.Message); }
-    }
-
-    private void ResetStatus()
-    {
-        try
-        {
-            var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/reset");
-            request.Proxy = null;
-            request.Timeout = 1000;
-            request.Method = "POST";
-            request.ContentLength = 0;
-            using (var response = request.GetResponse()) { }
-        }
-        catch { }
-    }
-
-    private void CopyCurrentTask()
-    {
-        var sb = new StringBuilder();
-        foreach (var ctrl in sessionControls)
-        {
-            if (!string.IsNullOrEmpty(ctrl.CurrentTask))
-            {
-                sb.AppendLine(ctrl.CurrentTask);
-            }
-        }
-        if (sb.Length > 0)
-        {
-            Clipboard.SetText(sb.ToString().TrimEnd());
-        }
     }
 
     private void ApplyRoundedCorners()
@@ -644,82 +606,6 @@ class ClaudeMonitor : Form
     }
 
     private SessionControl _lastClickedSession = null;
-
-    private void LinkActiveWindow()
-    {
-        if (_lastClickedSession == null || string.IsNullOrEmpty(_lastClickedSession.SessionId))
-        {
-            Log("No session selected for linking");
-            return;
-        }
-
-        // 获取当前前台窗口
-        IntPtr hwnd = NativeMethods.GetForegroundWindow();
-        if (hwnd == IntPtr.Zero)
-        {
-            Log("Failed to get foreground window");
-            return;
-        }
-
-        string handleStr = hwnd.ToInt64().ToString();
-        Log("Linking session " + _lastClickedSession.SessionId + " to window " + handleStr);
-
-        // 更新服务器中的 windowHandle
-        try
-        {
-            var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/session");
-            request.Proxy = null;
-            request.Timeout = 2000;
-            request.Method = "POST";
-            request.ContentType = "application/json";
-            string body = "{\"sessionId\":\"" + _lastClickedSession.SessionId + "\",\"windowHandle\":\"" + handleStr + "\"}";
-            byte[] data = Encoding.UTF8.GetBytes(body);
-            request.ContentLength = data.Length;
-            using (var stream = request.GetRequestStream())
-            {
-                stream.Write(data, 0, data.Length);
-            }
-            using (var response = request.GetResponse()) { }
-            Log("Window handle updated successfully");
-        }
-        catch (Exception ex)
-        {
-            Log("Failed to update window handle: " + ex.Message);
-        }
-    }
-
-    private void FlashLinkedWindow()
-    {
-        if (_lastClickedSession == null || string.IsNullOrEmpty(_lastClickedSession.WindowHandle))
-        {
-            Log("No window handle to flash");
-            return;
-        }
-
-        try
-        {
-            IntPtr hwnd = new IntPtr(long.Parse(_lastClickedSession.WindowHandle));
-            if (!NativeMethods.IsWindow(hwnd))
-            {
-                Log("Window handle is invalid");
-                return;
-            }
-
-            // Flash the window 5 times
-            for (int i = 0; i < 5; i++)
-            {
-                NativeMethods.ShowWindow(hwnd, 6); // SW_MINIMIZE
-                System.Threading.Thread.Sleep(100);
-                NativeMethods.ShowWindow(hwnd, 9); // SW_RESTORE
-                System.Threading.Thread.Sleep(100);
-            }
-            Log("Flashed window " + _lastClickedSession.WindowHandle);
-        }
-        catch (Exception ex)
-        {
-            Log("Flash error: " + ex.Message);
-        }
-    }
 
     private void ActivateClaudeWindow(string sessionId, string windowHandle)
     {
@@ -1079,6 +965,13 @@ class SessionControl : Panel
         }
 
         this.Controls.AddRange(new Control[] { horse, statusLbl, projectLbl, infoLbl, taskLbl });
+
+        // 右键菜单 - 删除会话
+        ContextMenuStrip sessionMenu = new ContextMenuStrip();
+        ToolStripMenuItem deleteItem = new ToolStripMenuItem("删除会话");
+        deleteItem.Click += (s, e) => DeleteSession();
+        sessionMenu.Items.Add(deleteItem);
+        this.ContextMenuStrip = sessionMenu;
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -1115,6 +1008,22 @@ class SessionControl : Panel
         _animTick++;
         horse.Animate();
         if (_flashBorder) this.Invalidate(); // 触发重绘
+    }
+
+    public void DeleteSession()
+    {
+        if (!string.IsNullOrEmpty(_sessionId))
+        {
+            try
+            {
+                var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/session/" + _sessionId);
+                request.Proxy = null;
+                request.Timeout = 1000;
+                request.Method = "DELETE";
+                using (var response = request.GetResponse()) { }
+            }
+            catch { }
+        }
     }
 
     public void UpdateData(SessionData data)
