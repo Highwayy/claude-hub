@@ -127,17 +127,21 @@ function getOrCreateSession(sessionId, project) {
             model: null,
             context: null,
             branch: null,
-            windowHandle: null
+            windowHandle: null,
+            userMessage: null
         };
     }
     return sessions[sessionId];
 }
 
-// Clean old sessions (older than 10 minutes of inactivity)
+// Clean old sessions (older than 30 minutes of inactivity)
 setInterval(() => {
     const now = Date.now();
     for (const id in sessions) {
-        if (!activeSessionIds.has(id) || now - sessions[id].lastUpdate > 600000) {
+        if (!activeSessionIds.has(id) || now - sessions[id].lastUpdate > 1800000) {
+            const inactiveSeconds = Math.round((now - sessions[id].lastUpdate) / 1000);
+            const isActive = activeSessionIds.has(id);
+            console.log(`[Cleanup] Removing session ${id}: active=${isActive}, inactive=${inactiveSeconds}s, project=${sessions[id].project}`);
             delete sessions[id];
             activeSessionIds.delete(id);
         }
@@ -209,7 +213,7 @@ app.get('/status', (req, res) => {
 
 // Update single session (from hooks)
 app.post('/session', (req, res) => {
-    const { sessionId, project, state, task, progress, message, windowHandle, model, context, branch } = req.body;
+    const { sessionId, project, state, task, progress, message, windowHandle, model, context, branch, userMessage } = req.body;
     const sid = sessionId || 'default';
     const session = getOrCreateSession(sid, project);
 
@@ -222,10 +226,12 @@ app.post('/session', (req, res) => {
     if (progress !== undefined) session.progress = Math.min(100, Math.max(0, progress));
     if (message !== undefined) session.message = message;
     if (windowHandle !== undefined) session.windowHandle = windowHandle;
-    // 只在新值非 null 时才更新，保留之前的值
-    if (model !== undefined && model !== null) session.model = model;
+    if (project !== undefined && project !== null) session.project = project;  // 允许动态更新项目名
+    // 只在新值非 null 时才更新，    if (model !== undefined && model !== null) session.model = model;
     if (context !== undefined && context !== null) session.context = context;
     if (branch !== undefined && branch !== null) session.branch = branch;
+    // userMessage 只在有新值时才更新，保持原值不被覆盖
+    if (userMessage !== undefined && userMessage !== null) session.userMessage = userMessage;
     session.lastUpdate = Date.now();
 
     // Add to history when task completes

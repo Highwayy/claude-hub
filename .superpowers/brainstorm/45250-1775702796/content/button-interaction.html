@@ -1,0 +1,100 @@
+<h2>Button & Interaction Design</h2>
+<p class="subtitle">Choose the header button style and click feedback effects</p>
+
+<div class="mockup">
+  <div class="mockup-header">Header Buttons & Hover Effects</div>
+  <div class="mockup-body" style="background:#1a1a2e;padding:15px;">
+
+    <!-- Current buttons -->
+    <div style="margin-bottom:20px;">
+      <p style="color:#888;font-size:11px;margin-bottom:10px;">Current (无hover效果)</p>
+      <div style="background:#667eea;padding:4px 8px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:#fff;font-size:12px;font-weight:bold;"> Claude</span>
+        <div style="display:flex;gap:2px;">
+          <button style="width:20px;height:20px;background:#2ecc71;border:none;border-radius:3px;color:#fff;font-size:9px;font-weight:bold;cursor:pointer;">P</button>
+          <button style="width:20px;height:20px;background:#e74c3c;border:none;border-radius:3px;color:#fff;font-size:10px;font-weight:bold;cursor:pointer;">X</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option A: Hover scale + tooltip -->
+    <div style="margin-bottom:20px;">
+      <p style="color:#888;font-size:11px;margin-bottom:10px;">Option A: Hover放大 + 悬停提示</p>
+      <div style="background:#667eea;padding:4px 8px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:#fff;font-size:12px;font-weight:bold;"> Claude</span>
+        <div style="display:flex;gap:2px;">
+          <div style="position:relative;">
+            <button style="width:24px;height:24px;background:#2ecc71;border:none;border-radius:4px;color:#fff;font-size:9px;font-weight:bold;cursor:pointer;transition:all 0.2s;">P</button>
+            <div style="position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#333;padding:4px 8px;border-radius:4px;font-size:10px;color:#fff;white-space:nowrap;">钉在顶层</div>
+          </div>
+          <div style="position:relative;">
+            <button style="width:24px;height:24px;background:#e74c3c;border:none;border-radius:4px;color:#fff;font-size:10px;font-weight:bold;cursor:pointer;transition:all 0.2s;">X</button>
+            <div style="position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#333;padding:4px 8px;border-radius:4px;font-size:10px;color:#fff;white-space:nowrap;">关闭会话</div>
+          </div>
+        </div>
+      </div>
+      <p style="color:#888;font-size:10px;margin-top:8px;">按钮 24x24px (与标题栏对齐) | hover: scale(1.1) + 颜色加深</p>
+    </div>
+
+    <!-- Option B: Icon buttons -->
+    <div style="margin-bottom:20px;">
+      <p style="color:#888;font-size:11px;margin-bottom:10px;">Option B: 图标按钮 + 阴影hover</p>
+      <div style="background:#667eea;padding:4px 8px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:#fff;font-size:12px;font-weight:bold;"> Claude</span>
+        <div style="display:flex;gap:3px;">
+          <button style="width:24px;height:24px;background:rgba(255,255,255,0.2);border:none;border-radius:4px;color:#fff;font-size:10px;cursor:pointer;">📌</button>
+          <button style="width:24px;height:24px;background:rgba(255,255,255,0.2);border:none;border-radius:4px;color:#fff;font-size:10px;cursor:pointer;">✕</button>
+        </div>
+      </div>
+      <p style="color:#888;font-size:10px;margin-top:8px;">统一透明背景 | hover: 背景+阴影变亮</p>
+    </div>
+
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">Click Feedback (像素马点击效果)</div>
+  <div class="mockup-body" style="background:#1a1a2e;padding:15px;">
+
+    <div style="display:flex;gap:20px;justify-content:center;align-items:center;">
+      <div style="text-align:center;">
+        <div style="background:#242438;padding:15px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">
+          <div style="font-family:monospace;font-size:8px;color:#2ecc71;white-space:pre;">▪▪🐴▪▪</div>
+        </div>
+        <p style="color:#888;font-size:10px;margin-top:8px;">Normal</p>
+      </div>
+
+      <div style="text-align:center;">
+        <div style="background:#242438;padding:15px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);transform:scale(0.95);opacity:0.8;">
+          <div style="font-family:monospace;font-size:8px;color:#2ecc71;white-space:pre;">▪▪🐴▪▪</div>
+        </div>
+        <p style="color:#888;font-size:10px;margin-top:8px;">Clicked (scale 0.95)</p>
+      </div>
+
+      <div style="text-align:center;">
+        <div style="background:#2a2a3a;padding:15px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);">
+          <div style="font-family:monospace;font-size:8px;color:#2ecc71;white-space:pre;">▪▪🐴▪▪</div>
+        </div>
+        <p style="color:#888;font-size:10px;margin-top:8px;">Hover (背景变亮)</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Hover放大 + Tooltip</h3>
+      <p>按钮放大110%，悬停显示中文提示</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>图标按钮 + 阴影</h3>
+      <p>统一透明背景，hover阴影效果</p>
+    </div>
+  </div>
+</div>

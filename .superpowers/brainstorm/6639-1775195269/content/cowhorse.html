@@ -1,0 +1,542 @@
+<h2>像素牛马形象</h2>
+<p class="subtitle">硬边缘 | 纯色块 | 牛角/马耳 | 打工人精神</p>
+
+<div class="mockup">
+  <div class="mockup-header">方案一：像素牛 (打工人)</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <p style="color:#888;font-size:11px;margin-bottom:16px;">24×20 像素 | 牛角 + 大眼睛 + 牛鼻子</p>
+
+    <div style="display:flex;gap:16px;flex-direction:column;">
+      <!-- Idle 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #5a5a5a;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;">
+          <!-- 牛角 -->
+          <div style="background:#8a7a5a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a7a5a;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#8a7a5a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a7a5a;"></div>
+          <div style="background:#a08060;"></div>
+          <!-- 头部 -->
+          <div style="background:#7a6a5a;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#7a6a5a;"></div>
+          <!-- 眼睛闭眼 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <!-- 鼻子平嘴 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#d4a574;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#7a7a7a;font-family:monospace;font-size:14px;">Idle</span>
+          <span style="color:#555;font-size:10px;margin-left:12px;">牛角 + 闭眼 + 牛鼻子</span>
+        </div>
+      </div>
+
+      <!-- Waiting 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #c4a35a;">
+        <div id="cow-waiting" style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;">
+          <div style="background:#8a7a4a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a7a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#8a7a4a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a7a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#7a6a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#7a6a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div id="cw-n1" style="background:#a08040;"></div>
+          <div id="cw-n2" style="background:#a08040;"></div>
+          <div id="cw-n3" style="background:#a08040;"></div>
+          <div id="cw-n4" style="background:#a08040;"></div>
+          <div style="background:#c4a35a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#c4a35a;font-family:monospace;font-size:14px;">Waiting</span>
+          <span style="color:#555;font-size:10px;margin-left:12px;">牛角抖动 + 瞪眼 + 牛鼻子呼吸</span>
+        </div>
+      </div>
+
+      <!-- Thinking 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #d4a574;">
+        <div id="cow-thinking" style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;">
+          <div style="background:#a08060;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#b08050;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#b08050;"></div>
+          <div style="background:#d4a574;"></div>
+          <div id="ct-e1" style="background:#fff;"></div>
+          <div id="ct-e2" style="background:#fff;"></div>
+          <div id="ct-e3" style="background:#fff;"></div>
+          <div id="ct-e4" style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#d4a574;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#d4a574;font-family:monospace;font-size:14px;">Thinking</span>
+          <span style="color:#555;font-size:10px;margin-left:12px;">牛角 + 眼睛闪烁 + 牛鼻子</span>
+        </div>
+      </div>
+
+      <!-- Working 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #b8956a;">
+        <div id="cow-working" style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;">
+          <div style="background:#7a6040;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#7a6040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#7a6040;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#7a6040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#8a704a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#8a704a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div id="cw1" style="background:#a08040;"></div>
+          <div id="cw2" style="background:#a08040;"></div>
+          <div id="cw3" style="background:#a08040;"></div>
+          <div id="cw4" style="background:#a08040;"></div>
+          <div style="background:#b8956a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#b8956a;font-family:monospace;font-size:14px;">Working</span>
+          <span style="color:#555;font-size:10px;margin-left:12px;">牛角 + 瞪眼 + 牛鼻子呼吸(干活中)</span>
+        </div>
+      </div>
+
+      <!-- Complete 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #5a9a6a;">
+        <div id="cow-complete" style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;">
+          <div style="background:#3a704a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#4a805a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#4a805a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#4a805a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#4a805a;"></div>
+          <div style="background:#5a9a6a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#5a9a6a;font-family:monospace;font-size:14px;">Complete ✓</span>
+          <span style="color:#555;font-size:10px;margin-left:12px;">牛角 + 开心眯眼 + 牛鼻子微笑</span>
+        </div>
+      </div>
+
+      <!-- Error 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #8a4a4a;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;">
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#6a3a3a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#6a3a3a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#8a4a4a;font-family:monospace;font-size:14px;">Error ✗</span>
+          <span style="color:#555;font-size:10px;margin-left:12px;">牛角 + X眼 + 牛鼻子皱眉</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px;">
+  <div class="mockup-header">方案二：像素马 (奔跑者)</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <p style="color:#888;font-size:11px;margin-bottom:16px;">24×20 像素 | 马耳 + 马鬃毛 + 马脸</p>
+
+    <div style="display:flex;gap:32px;flex-wrap:wrap;">
+      <!-- Thinking 马 -->
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;margin-bottom:8px;">
+          <!-- 马耳 -->
+          <div style="background:transparent;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:transparent;"></div>
+          <!-- 鬃毛 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#d4a574;"></div>
+          <!-- 头 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <!-- 眼睛 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <!-- 鼻子 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#d4a574;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Thinking</span>
+      </div>
+
+      <!-- Working 马 -->
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;margin-bottom:8px;">
+          <div style="background:transparent;"></div>
+          <div style="background:#7a6040;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#8a7040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#8a7040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#a08040;"></div>
+          <div style="background:#a08040;"></div>
+          <div style="background:#a08040;"></div>
+          <div style="background:#a08040;"></div>
+          <div style="background:#b8956a;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Working (鬃毛飞扬)</span>
+      </div>
+
+      <!-- Complete 马 -->
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;margin-bottom:8px;">
+          <div style="background:transparent;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#4a805a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#4a805a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a9a6a;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Complete</span>
+      </div>
+
+      <!-- Error 马 -->
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;margin-bottom:8px;">
+          <div style="background:transparent;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#6a3a3a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#6a3a3a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Error</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px;">
+  <div class="mockup-header">方案三：牛马合一 (打工魂)</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <p style="color:#888;font-size:11px;margin-bottom:16px;">牛角 + 马耳 + 马鬃毛 = 打工人终极形态</p>
+
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:center;">
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(6,4px);grid-template-rows:repeat(5,4px);gap:0;margin-bottom:8px;">
+          <!-- 牛角+马耳 -->
+          <div style="background:#8a7a5a;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#8a7a5a;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#a08060;"></div>
+          <!-- 头 -->
+          <div style="background:#b08050;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#b08050;"></div>
+          <!-- 眼睛 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <!-- 鼻子 -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#c08040;"></div>
+          <div style="background:#d4a574;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">牛马合一</span>
+      </div>
+
+      <div style="color:#888;font-size:11px;max-width:200px;">
+        <p style="margin:0;">"做牛做马"的终极形态</p>
+        <p style="margin:8px 0 0;color:#d4a574;">牛角 - 辛勤耕耘<br>马耳 - 听命奔波<br>鬃毛 - 奔跑不息</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="cow" onclick="toggleSelect(this)">
+    <div class="letter">牛</div>
+    <div class="content">
+      <h3>方案一：像素牛</h3>
+      <p>牛角 + 牛鼻子，稳重踏实的打工人形象</p>
+    </div>
+  </div>
+  <div class="option" data-choice="horse" onclick="toggleSelect(this)">
+    <div class="letter">马</div>
+    <div class="content">
+      <h3>方案二：像素马</h3>
+      <p>马耳 + 鬃毛，奔跑不息的执行者形象</p>
+    </div>
+  </div>
+  <div class="option" data-choice="cowhorse" onclick="toggleSelect(this)">
+    <div class="letter">牛马</div>
+    <div class="content">
+      <h3>方案三：牛马合一</h3>
+      <p>牛角 + 马耳 + 鬃毛，打工人终极形态</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let tick = 0;
+setInterval(() => {
+  tick++;
+
+  // Thinking 牛: 眼睛闪烁
+  const ctE1 = document.getElementById('ct-e1');
+  const ctE2 = document.getElementById('ct-e2');
+  const ctE3 = document.getElementById('ct-e3');
+  const ctE4 = document.getElementById('ct-e4');
+  if (ctE1) {
+    const white = tick % 2 === 0;
+    ctE1.style.background = white ? '#fff' : '#d4a574';
+    ctE2.style.background = white ? '#fff' : '#d4a574';
+    ctE3.style.background = white ? '#fff' : '#d4a574';
+    ctE4.style.background = white ? '#fff' : '#d4a574';
+  }
+
+  // Waiting 牛: 鼻子呼吸
+  const cwN1 = document.getElementById('cw-n1');
+  const cwN2 = document.getElementById('cw-n2');
+  const cwN3 = document.getElementById('cw-n3');
+  const cwN4 = document.getElementById('cw-n4');
+  if (cwN1) {
+    const phase = tick % 4;
+    cwN1.style.background = phase === 0 ? '#c4a35a' : '#a08040';
+    cwN4.style.background = phase === 2 ? '#c4a35a' : '#a08040';
+  }
+
+  // Working 牛: 鼻子呼吸
+  const cw1 = document.getElementById('cw1');
+  const cw4 = document.getElementById('cw4');
+  if (cw1) {
+    const phase = tick % 3;
+    cw1.style.background = phase === 0 ? '#b8956a' : '#a08040';
+    cw4.style.background = phase === 2 ? '#b8956a' : '#a08040';
+  }
+
+  // Complete 牛: 整体闪烁
+  const cowC = document.getElementById('cow-complete');
+  if (cowC) {
+    const bright = tick % 2 === 0;
+    cowC.style.opacity = bright ? '1' : '0.7';
+  }
+}, 300);
+</script>

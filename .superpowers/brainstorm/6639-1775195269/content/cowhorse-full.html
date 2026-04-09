@@ -1,0 +1,350 @@
+<h2>像素牛马 - 全身形象</h2>
+<p class="subtitle">完整身体 | 四肢站立 | 侧面剪影 | 打工人形象</p>
+
+<div class="mockup">
+  <div class="mockup-header">像素牛 - 全身 (48×40, 4px单元)</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <p style="color:#888;font-size:11px;margin-bottom:12px;">特征：牛角 + 宽身体 + 四条腿 + 尾巴</p>
+
+    <div style="display:flex;gap:24px;flex-direction:column;">
+      <!-- Idle 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #5a5a5a;">
+        <div style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;">
+          <!-- 牛角 -->
+          <div style="grid-column:1/3;grid-row:1/2;background:#8a7a5a;"></div>
+          <div style="grid-column:11/13;grid-row:1/2;background:#8a7a5a;"></div>
+          <div style="grid-column:2/4;grid-row:2/3;background:#a08060;"></div>
+          <div style="grid-column:10/12;grid-row:2/3;background:#a08060;"></div>
+          <!-- 头 -->
+          <div style="grid-column:3/11;grid-row:2/5;background:#d4a574;"></div>
+          <!-- 眼睛闭眼 -->
+          <div style="grid-column:4/6;grid-row:3/4;background:#d4a574;"></div>
+          <div style="grid-column:7/9;grid-row:3/4;background:#d4a574;"></div>
+          <!-- 鼻子 -->
+          <div style="grid-column:4/8;grid-row:4/5;background:#c08040;"></div>
+          <!-- 身体 -->
+          <div style="grid-column:2/12;grid-row:5/8;background:#d4a574;"></div>
+          <!-- 腿 -->
+          <div style="grid-column:3/5;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:5/7;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:7/9;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:9/11;grid-row:8/11;background:#a08060;"></div>
+          <!-- 尾巴 -->
+          <div style="grid-column:11/12;grid-row:6/8;background:#a08060;"></div>
+          <div style="grid-column:12/13;grid-row:7/8;background:#8a7a5a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#7a7a7a;font-family:monospace;font-size:13px;">Idle</span>
+          <span style="color:#555;font-size:10px;margin-left:10px;">站立休息</span>
+        </div>
+      </div>
+
+      <!-- Thinking 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #d4a574;">
+        <div id="cow-full-t" style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;">
+          <!-- 牛角 -->
+          <div style="grid-column:1/3;grid-row:1/2;background:#a08060;"></div>
+          <div style="grid-column:11/13;grid-row:1/2;background:#a08060;"></div>
+          <div style="grid-column:2/4;grid-row:2/3;background:#d4a574;"></div>
+          <div style="grid-column:10/12;grid-row:2/3;background:#d4a574;"></div>
+          <!-- 头 -->
+          <div style="grid-column:3/11;grid-row:2/5;background:#d4a574;"></div>
+          <!-- 眼睛睁眼闪烁 -->
+          <div id="ct-eye1" style="grid-column:4/6;grid-row:3/4;background:#fff;"></div>
+          <div id="ct-eye2" style="grid-column:7/9;grid-row:3/4;background:#fff;"></div>
+          <!-- 鼻子 -->
+          <div style="grid-column:4/8;grid-row:4/5;background:#c08040;"></div>
+          <!-- 身体 -->
+          <div style="grid-column:2/12;grid-row:5/8;background:#d4a574;"></div>
+          <!-- 腿 -->
+          <div style="grid-column:3/5;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:5/7;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:7/9;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:9/11;grid-row:8/11;background:#a08060;"></div>
+          <!-- 尾巴 -->
+          <div style="grid-column:11/12;grid-row:6/8;background:#a08060;"></div>
+          <div style="grid-column:12/13;grid-row:7/8;background:#8a7a5a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#d4a574;font-family:monospace;font-size:13px;">Thinking</span>
+          <span style="color:#555;font-size:10px;margin-left:10px;">眼睛闪烁思考</span>
+        </div>
+      </div>
+
+      <!-- Working 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #b8956a;">
+        <div id="cow-full-w" style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;">
+          <!-- 牛角 -->
+          <div style="grid-column:1/3;grid-row:1/2;background:#7a6040;"></div>
+          <div style="grid-column:11/13;grid-row:1/2;background:#7a6040;"></div>
+          <div style="grid-column:2/4;grid-row:2/3;background:#b8956a;"></div>
+          <div style="grid-column:10/12;grid-row:2/3;background:#b8956a;"></div>
+          <!-- 头 -->
+          <div style="grid-column:3/11;grid-row:2/5;background:#b8956a;"></div>
+          <!-- 眼睛睁大 -->
+          <div style="grid-column:4/6;grid-row:3/4;background:#fff;"></div>
+          <div style="grid-column:7/9;grid-row:3/4;background:#fff;"></div>
+          <!-- 鼻子喷气 -->
+          <div id="cw-nose" style="grid-column:4/8;grid-row:4/5;background:#a08040;"></div>
+          <!-- 身体 -->
+          <div style="grid-column:2/12;grid-row:5/8;background:#b8956a;"></div>
+          <!-- 腿 (交替抬起) -->
+          <div id="cw-leg1" style="grid-column:3/5;grid-row:8/11;background:#8a7040;"></div>
+          <div id="cw-leg2" style="grid-column:5/7;grid-row:9/11;background:#8a7040;"></div>
+          <div id="cw-leg3" style="grid-column:7/9;grid-row:8/11;background:#8a7040;"></div>
+          <div id="cw-leg4" style="grid-column:9/11;grid-row:9/11;background:#8a7040;"></div>
+          <!-- 尾巴摆动 -->
+          <div id="cw-tail1" style="grid-column:11/12;grid-row:6/8;background:#8a7040;"></div>
+          <div id="cw-tail2" style="grid-column:12/13;grid-row:5/7;background:#7a6040;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#b8956a;font-family:monospace;font-size:13px;">Working</span>
+          <span style="color:#555;font-size:10px;margin-left:10px;">走路干活</span>
+        </div>
+      </div>
+
+      <!-- Complete 牛 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #5a9a6a;">
+        <div id="cow-full-c" style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;">
+          <!-- 牛角 -->
+          <div style="grid-column:1/3;grid-row:1/2;background:#3a704a;"></div>
+          <div style="grid-column:11/13;grid-row:1/2;background:#3a704a;"></div>
+          <div style="grid-column:2/4;grid-row:2/3;background:#5a9a6a;"></div>
+          <div style="grid-column:10/12;grid-row:2/3;background:#5a9a6a;"></div>
+          <!-- 头 -->
+          <div style="grid-column:3/11;grid-row:2/5;background:#5a9a6a;"></div>
+          <!-- 眼睛眯眼笑 -->
+          <div style="grid-column:4/6;grid-row:3/4;background:#3a704a;"></div>
+          <div style="grid-column:7/9;grid-row:3/4;background:#3a704a;"></div>
+          <!-- 鼻子微笑 -->
+          <div style="grid-column:4/8;grid-row:4/5;background:#4a805a;"></div>
+          <!-- 身体 -->
+          <div style="grid-column:2/12;grid-row:5/8;background:#5a9a6a;"></div>
+          <!-- 腿 -->
+          <div style="grid-column:3/5;grid-row:8/11;background:#3a704a;"></div>
+          <div style="grid-column:5/7;grid-row:8/11;background:#3a704a;"></div>
+          <div style="grid-column:7/9;grid-row:8/11;background:#3a704a;"></div>
+          <div style="grid-column:9/11;grid-row:8/11;background:#3a704a;"></div>
+          <!-- 尾巴 -->
+          <div style="grid-column:11/12;grid-row:6/8;background:#3a704a;"></div>
+          <div style="grid-column:12/13;grid-row:7/8;background:#2a603a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#5a9a6a;font-family:monospace;font-size:13px;">Complete ✓</span>
+          <span style="color:#555;font-size:10px;margin-left:10px;">开心站立</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px;">
+  <div class="mockup-header">像素马 - 全身 (48×40, 4px单元)</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <p style="color:#888;font-size:11px;margin-bottom:12px;">特征：尖耳 + 鬃毛 + 长身体 + 四条腿 + 长尾巴</p>
+
+    <div style="display:flex;gap:32px;flex-wrap:wrap;">
+      <!-- Idle 马 -->
+      <div style="text-align:center;">
+        <div style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;margin-bottom:8px;">
+          <!-- 耳朵 -->
+          <div style="grid-column:3/4;grid-row:1/2;background:#d4a574;"></div>
+          <div style="grid-column:4/5;grid-row:1/3;background:#a08060;"></div>
+          <div style="grid-column:8/9;grid-row:1/3;background:#a08060;"></div>
+          <div style="grid-column:9/10;grid-row:1/2;background:#d4a574;"></div>
+          <!-- 鬃毛 -->
+          <div style="grid-column:5/8;grid-row:1/3;background:#8a7a5a;"></div>
+          <!-- 头 -->
+          <div style="grid-column:2/10;grid-row:2/5;background:#d4a574;"></div>
+          <!-- 眼睛闭眼 -->
+          <div style="grid-column:3/5;grid-row:3/4;background:#d4a574;"></div>
+          <div style="grid-column:6/8;grid-row:3/4;background:#d4a574;"></div>
+          <!-- 鼻子 -->
+          <div style="grid-column:3/6;grid-row:4/5;background:#c08040;"></div>
+          <!-- 脖子 -->
+          <div style="grid-column:6/10;grid-row:5/6;background:#d4a574;"></div>
+          <!-- 身体 -->
+          <div style="grid-column:2/12;grid-row:5/8;background:#d4a574;"></div>
+          <!-- 腿 -->
+          <div style="grid-column:3/5;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:5/7;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:8/10;grid-row:8/11;background:#a08060;"></div>
+          <div style="grid-column:10/12;grid-row:8/11;background:#a08060;"></div>
+          <!-- 尾巴 -->
+          <div style="grid-column:11/12;grid-row:5/8;background:#8a7a5a;"></div>
+          <div style="grid-column:12/13;grid-row:6/9;background:#8a7a5a;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Idle</span>
+      </div>
+
+      <!-- Working 马 (奔跑) -->
+      <div style="text-align:center;">
+        <div style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;margin-bottom:8px;">
+          <!-- 耳朵向后 -->
+          <div style="grid-column:4/5;grid-row:1/2;background:#b8956a;"></div>
+          <div style="grid-column:5/6;grid-row:1/3;background:#7a6040;"></div>
+          <div style="grid-column:7/8;grid-row:1/3;background:#7a6040;"></div>
+          <div style="grid-column:8/9;grid-row:1/2;background:#b8956a;"></div>
+          <!-- 鬃毛飞扬 -->
+          <div style="grid-column:6/7;grid-row:1/3;background:#8a7040;"></div>
+          <div style="grid-column:3/4;grid-row:2/4;background:#7a6040;"></div>
+          <!-- 头向前倾 -->
+          <div style="grid-column:1/9;grid-row:3/5;background:#b8956a;"></div>
+          <!-- 眼睛睁大 -->
+          <div style="grid-column:2/4;grid-row:3/4;background:#fff;"></div>
+          <div style="grid-column:5/7;grid-row:3/4;background:#fff;"></div>
+          <!-- 鼻子 -->
+          <div style="grid-column:1/4;grid-row:4/5;background:#a08040;"></div>
+          <!-- 身体 -->
+          <div style="grid-column:3/12;grid-row:5/8;background:#b8956a;"></div>
+          <!-- 腿奔跑姿态 -->
+          <div style="grid-column:2/4;grid-row:7/10;background:#8a7040;"></div>
+          <div style="grid-column:5/7;grid-row:8/11;background:#8a7040;"></div>
+          <div style="grid-column:8/10;grid-row:7/10;background:#8a7040;"></div>
+          <div style="grid-column:10/12;grid-row:8/11;background:#8a7040;"></div>
+          <!-- 尾巴飘扬 -->
+          <div style="grid-column:11/12;grid-row:4/6;background:#8a7040;"></div>
+          <div style="grid-column:12/13;grid-row:3/6;background:#7a6040;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Working (奔跑)</span>
+      </div>
+
+      <!-- Complete 马 -->
+      <div style="text-align:center;">
+        <div style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;margin-bottom:8px;">
+          <!-- 耳朵 -->
+          <div style="grid-column:3/4;grid-row:1/2;background:#5a9a6a;"></div>
+          <div style="grid-column:4/5;grid-row:1/3;background:#3a704a;"></div>
+          <div style="grid-column:8/9;grid-row:1/3;background:#3a704a;"></div>
+          <div style="grid-column:9/10;grid-row:1/2;background:#5a9a6a;"></div>
+          <!-- 鬃毛 -->
+          <div style="grid-column:5/8;grid-row:1/3;background:#4a805a;"></div>
+          <!-- 头 -->
+          <div style="grid-column:2/10;grid-row:2/5;background:#5a9a6a;"></div>
+          <!-- 眼睛眯眼笑 -->
+          <div style="grid-column:3/5;grid-row:3/4;background:#3a704a;"></div>
+          <div style="grid-column:6/8;grid-row:3/4;background:#3a704a;"></div>
+          <!-- 鼻子微笑 -->
+          <div style="grid-column:3/6;grid-row:4/5;background:#4a805a;"></div>
+          <!-- 身体 -->
+          <div style="grid-column:2/12;grid-row:5/8;background:#5a9a6a;"></div>
+          <!-- 腿 -->
+          <div style="grid-column:3/5;grid-row:8/11;background:#3a704a;"></div>
+          <div style="grid-column:5/7;grid-row:8/11;background:#3a704a;"></div>
+          <div style="grid-column:8/10;grid-row:8/11;background:#3a704a;"></div>
+          <div style="grid-column:10/12;grid-row:8/11;background:#3a704a;"></div>
+          <!-- 尾巴 -->
+          <div style="grid-column:11/12;grid-row:5/8;background:#4a805a;"></div>
+          <div style="grid-column:12/13;grid-row:6/9;background:#4a805a;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Complete</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px;">
+  <div class="mockup-header">牛马合一 - 全身打工魂</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <p style="color:#888;font-size:11px;margin-bottom:12px;">牛角(辛勤) + 马鬃毛(敏捷) + 牛身体(踏实) + 马尾巴(灵活)</p>
+
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+      <div style="width:48px;height:40px;display:grid;grid-template-columns:repeat(12,4px);grid-template-rows:repeat(10,4px);gap:0;">
+        <!-- 牛角 -->
+        <div style="grid-column:1/3;grid-row:1/2;background:#8a7a5a;"></div>
+        <div style="grid-column:11/13;grid-row:1/2;background:#8a7a5a;"></div>
+        <div style="grid-column:2/4;grid-row:2/3;background:#a08060;"></div>
+        <div style="grid-column:10/12;grid-row:2/3;background:#a08060;"></div>
+        <!-- 鬃毛 -->
+        <div style="grid-column:4/6;grid-row:1/3;background:#8a7a5a;"></div>
+        <div style="grid-column:7/9;grid-row:1/3;background:#8a7a5a;"></div>
+        <!-- 头 -->
+        <div style="grid-column:3/11;grid-row:2/5;background:#d4a574;"></div>
+        <!-- 眼睛 -->
+        <div style="grid-column:4/6;grid-row:3/4;background:#fff;"></div>
+        <div style="grid-column:7/9;grid-row:3/4;background:#fff;"></div>
+        <!-- 鼻子 -->
+        <div style="grid-column:4/8;grid-row:4/5;background:#c08040;"></div>
+        <!-- 身体 -->
+        <div style="grid-column:2/12;grid-row:5/8;background:#d4a574;"></div>
+        <!-- 腿 -->
+        <div style="grid-column:3/5;grid-row:8/11;background:#a08060;"></div>
+        <div style="grid-column:5/7;grid-row:8/11;background:#a08060;"></div>
+        <div style="grid-column:7/9;grid-row:8/11;background:#a08060;"></div>
+        <div style="grid-column:9/11;grid-row:8/11;background:#a08060;"></div>
+        <!-- 马尾巴 -->
+        <div style="grid-column:11/12;grid-row:5/7;background:#a08060;"></div>
+        <div style="grid-column:12/13;grid-row:4/7;background:#8a7a5a;"></div>
+      </div>
+
+      <div style="color:#888;font-size:10px;line-height:1.8;max-width:180px;">
+        <p style="margin:0;">牛角 ↗↖ 辛勤耕耘</p>
+        <p style="margin:0;">马鬃毛 ≋≈ 敏捷高效</p>
+        <p style="margin:0;">牛身体 ▓▓ 踏实稳重</p>
+        <p style="margin:0;">马尾巴 ~~ 灵活应变</p>
+        <p style="margin:8px 0 0;color:#d4a574;font-size:12px;">"做牛做马，打工魂!"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="cow-full" onclick="toggleSelect(this)">
+    <div class="letter">牛</div>
+    <div class="content">
+      <h3>像素牛 全身</h3>
+      <p>牛角 + 宽身体 + 四腿站立，稳重踏实</p>
+    </div>
+  </div>
+  <div class="option" data-choice="horse-full" onclick="toggleSelect(this)">
+    <div class="letter">马</div>
+    <div class="content">
+      <h3>像素马 全身</h3>
+      <p>尖耳 + 鬃毛 + 奔跑姿态，敏捷快速</p>
+    </div>
+  </div>
+  <div class="option" data-choice="cowhorse-full" onclick="toggleSelect(this)">
+    <div class="letter">牛马</div>
+    <div class="content">
+      <h3>牛马合一 全身</h3>
+      <p>牛角+马鬃毛+牛身体+马尾巴，打工魂完整</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let tick = 0;
+setInterval(() => {
+  tick++;
+
+  // Thinking 牛眼睛闪烁
+  const ctEye1 = document.getElementById('ct-eye1');
+  const ctEye2 = document.getElementById('ct-eye2');
+  if (ctEye1) {
+    ctEye1.style.background = tick % 2 === 0 ? '#fff' : '#d4a574';
+    ctEye2.style.background = tick % 2 === 0 ? '#fff' : '#d4a574';
+  }
+
+  // Working 牛腿交替、尾巴摆动
+  const phase = tick % 4;
+  const leg1 = document.getElementById('cw-leg1');
+  const leg2 = document.getElementById('cw-leg2');
+  const leg3 = document.getElementById('cw-leg3');
+  const leg4 = document.getElementById('cw-leg4');
+  const tail1 = document.getElementById('cw-tail1');
+  const tail2 = document.getElementById('cw-tail2');
+
+  if (leg1) {
+    // 腿交替抬起
+    leg1.style.gridRow = phase < 2 ? '8/11' : '9/11';
+    leg2.style.gridRow = phase >= 2 ? '8/11' : '9/11';
+    leg3.style.gridRow = phase < 2 ? '9/11' : '8/11';
+    leg4.style.gridRow = phase >= 2 ? '9/11' : '8/11';
+  }
+
+  if (tail1) {
+    // 尾巴摆动
+    tail2.style.gridRow = tick % 2 === 0 ? '5/7' : '6/8';
+  }
+}, 250);
+</script>

@@ -1,0 +1,339 @@
+<h2>像素小怪物 - 更大尺寸</h2>
+<p class="subtitle">18x16 像素网格 | 6px 单元 | 更清晰的表情</p>
+
+<div class="mockup">
+  <div class="mockup-header">尺寸对比</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+      <!-- 原尺寸 14x12 -->
+      <div>
+        <p style="color:#888;font-size:11px;margin-bottom:12px;">原尺寸: 14×12 (4px单元)</p>
+        <div style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;background:#d4a574;">
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+      </div>
+
+      <!-- 新尺寸 18x16 -->
+      <div>
+        <p style="color:#888;font-size:11px;margin-bottom:12px;">新尺寸: 18×16 (6px单元)</p>
+        <div style="width:18px;height:16px;display:grid;grid-template-columns:repeat(4,6px);grid-template-rows:repeat(3,6px);gap:0;background:#d4a574;">
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+      </div>
+
+      <!-- 超大尺寸 24x20 -->
+      <div>
+        <p style="color:#888;font-size:11px;margin-bottom:12px;">超大尺寸: 24×20 (8px单元)</p>
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(4,8px);grid-template-rows:repeat(3,8px);gap:0;background:#d4a574;">
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px;">
+  <div class="mockup-header">18×16 像素小怪物 - 所有状态</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <div style="display:flex;gap:16px;flex-direction:column;">
+      <!-- Idle: 睡眠状态 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #5a5a5a;">
+        <div style="width:18px;height:16px;display:grid;grid-template-columns:repeat(4,6px);grid-template-rows:repeat(3,6px);gap:0;">
+          <div style="background:#3a3a3a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#3a3a3a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#7a7a7a;font-family:monospace;font-size:14px;">Idle</span>
+          <span style="color:#555;font-size:11px;margin-left:12px;">闭眼 + 平嘴 = 等待中</span>
+        </div>
+      </div>
+
+      <!-- Waiting: 焦虑等待 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #c4a35a;">
+        <div id="w-monster" style="width:18px;height:16px;display:grid;grid-template-columns:repeat(4,6px);grid-template-rows:repeat(3,6px);gap:0;">
+          <div id="w-a1" style="background:#8a7a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div id="w-a2" style="background:#8a7a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:transparent;"></div>
+          <div id="w-m1" style="background:#c4a35a;"></div>
+          <div id="w-m2" style="background:#c4a35a;"></div>
+          <div id="w-m3" style="background:#c4a35a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#c4a35a;font-family:monospace;font-size:14px;">Waiting</span>
+          <span style="color:#555;font-size:11px;margin-left:12px;">睁大眼 + 张嘴 = 等待用户</span>
+        </div>
+      </div>
+
+      <!-- Thinking: 思考中 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #d4a574;">
+        <div id="t-monster" style="width:18px;height:16px;display:grid;grid-template-columns:repeat(4,6px);grid-template-rows:repeat(3,6px);gap:0;">
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div id="t-e1" style="background:#fff;"></div>
+          <div id="t-e2" style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#d4a574;font-family:monospace;font-size:14px;">Thinking</span>
+          <span style="color:#555;font-size:11px;margin-left:12px;">睁眼 + 平嘴 = AI思考</span>
+        </div>
+      </div>
+
+      <!-- Working: 工作中 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #b8956a;">
+        <div id="wk-monster" style="width:18px;height:16px;display:grid;grid-template-columns:repeat(4,6px);grid-template-rows:repeat(3,6px);gap:0;">
+          <div style="background:#7a6040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#7a6040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:transparent;"></div>
+          <div id="wk-m1" style="background:#b8956a;"></div>
+          <div id="wk-m2" style="background:#b8956a;"></div>
+          <div id="wk-m3" style="background:#b8956a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#b8956a;font-family:monospace;font-size:14px;">Working</span>
+          <span style="color:#555;font-size:11px;margin-left:12px;">睁眼 + 张嘴 = 执行任务</span>
+        </div>
+      </div>
+
+      <!-- Complete: 完成 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #5a9a6a;">
+        <div id="c-monster" style="width:18px;height:16px;display:grid;grid-template-columns:repeat(4,6px);grid-template-rows:repeat(3,6px);gap:0;">
+          <div id="c-a1" style="background:#3a704a;"></div>
+          <div id="c-b1" style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div id="c-a2" style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#5a9a6a;font-family:monospace;font-size:14px;">Complete ✓</span>
+          <span style="color:#555;font-size:11px;margin-left:12px;">眯眼(^^) + 微笑 = 完成</span>
+        </div>
+      </div>
+
+      <!-- Error: 错误 -->
+      <div style="display:flex;align-items:center;gap:16px;padding:12px;background:#1a1a1a;border-left:4px solid #8a4a4a;">
+        <div style="width:18px;height:16px;display:grid;grid-template-columns:repeat(4,6px);grid-template-rows:repeat(3,6px);gap:0;">
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a4a4a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#8a4a4a;font-family:monospace;font-size:14px;">Error ✗</span>
+          <span style="color:#555;font-size:11px;margin-left:12px;">X眼 + 皱眉 = 出错了</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px;">
+  <div class="mockup-header">24×20 超大尺寸预览</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:center;">
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(4,8px);grid-template-rows:repeat(3,8px);gap:0;margin-bottom:8px;">
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Thinking</span>
+      </div>
+
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(4,8px);grid-template-rows:repeat(3,8px);gap:0;margin-bottom:8px;">
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Complete</span>
+      </div>
+
+      <div style="text-align:center;">
+        <div style="width:24px;height:20px;display:grid;grid-template-columns:repeat(4,8px);grid-template-rows:repeat(3,8px);gap:0;margin-bottom:8px;">
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a4a4a;"></div>
+        </div>
+        <span style="color:#888;font-size:10px;">Error</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="size-18" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>18×16 (6px单元)</h3>
+      <p>适中增大，保持紧凑，适合 Monitor 窗口</p>
+    </div>
+  </div>
+  <div class="option" data-choice="size-24" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>24×20 (8px单元)</h3>
+      <p>更大更清晰，表情细节更明显</p>
+    </div>
+  </div>
+  <div class="option" data-choice="size-30" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>30×24 (10px单元)</h3>
+      <p>超大尺寸，最大可见度</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let tick = 0;
+setInterval(() => {
+  tick++;
+
+  // Thinking: 眼睛闪烁
+  const tE1 = document.getElementById('t-e1');
+  const tE2 = document.getElementById('t-e2');
+  if (tE1 && tE2) {
+    tE1.style.background = tick % 2 === 0 ? '#fff' : '#d4a574';
+    tE2.style.background = tick % 2 === 0 ? '#fff' : '#d4a574';
+  }
+
+  // Waiting: 天线抖动 + 嘴巴呼吸
+  const wA1 = document.getElementById('w-a1');
+  const wA2 = document.getElementById('w-a2');
+  const wM1 = document.getElementById('w-m1');
+  const wM2 = document.getElementById('w-m2');
+  const wM3 = document.getElementById('w-m3');
+  if (wA1) {
+    const phase = tick % 4;
+    wA1.style.background = phase < 2 ? '#c4a35a' : '#8a7a4a';
+    wA2.style.background = phase >= 2 ? '#c4a35a' : '#8a7a4a';
+    wM1.style.background = phase === 0 ? 'transparent' : '#c4a35a';
+    wM3.style.background = phase === 2 ? 'transparent' : '#c4a35a';
+  }
+
+  // Working: 嘴巴呼吸
+  const wkM1 = document.getElementById('wk-m1');
+  const wkM3 = document.getElementById('wk-m3');
+  if (wkM1) {
+    const phase = tick % 3;
+    wkM1.style.background = phase === 0 ? 'transparent' : '#b8956a';
+    wkM3.style.background = phase === 2 ? 'transparent' : '#b8956a';
+  }
+
+  // Complete: 闪烁
+  const cA1 = document.getElementById('c-a1');
+  const cB1 = document.getElementById('c-b1');
+  const cA2 = document.getElementById('c-a2');
+  if (cB1) {
+    const bright = tick % 2 === 0;
+    cA1.style.background = bright ? '#5a9a6a' : '#3a704a';
+    cB1.style.background = bright ? '#7ab88a' : '#5a9a6a';
+    cA2.style.background = bright ? '#5a9a6a' : '#3a704a';
+  }
+}, 300);
+</script>

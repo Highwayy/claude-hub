@@ -1,0 +1,117 @@
+<h2>更多像素风格方案</h2>
+<p class="subtitle">三种不同的像素风格设计方向</p>
+
+<div class="cards">
+  <div class="card" data-choice="pixel-b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:20px;min-height:180px;">
+      <div style="display:flex;gap:12px;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;background:#6b7280;box-shadow:2px 2px 0 #374151;"></div>
+          <span style="color:#9ca3af;font-size:12px;">Idle</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;background:#fbbf24;box-shadow:2px 2px 0 #d97706;animation:blink 0.6s infinite;"></div>
+          <span style="color:#fbbf24;font-size:12px;">Waiting (黄色警告)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;background:#a78bfa;box-shadow:2px 2px 0 #7c3aed;animation:pulse 1s infinite;"></div>
+          <span style="color:#a78bfa;font-size:12px;">Thinking (紫罗兰)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;background:#fb923c;box-shadow:2px 2px 0 #ea580c;animation:pulse 1s infinite;"></div>
+          <span style="color:#fb923c;font-size:12px;">Working (橙色)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;background:#4ade80;box-shadow:2px 2px 0 #22c55e;"></div>
+          <span style="color:#4ade80;font-size:12px;">Complete ✓</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;background:#f87171;box-shadow:2px 2px 0 #dc2626;"></div>
+          <span style="color:#f87171;font-size:12px;">Error ✗</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>风格 B - 极简像素</h3>
+      <p>8x8像素方块，右下角单阴影，扁平化像素美学。黄色用于Waiting更符合警告语义。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="pixel-c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:20px;min-height:180px;">
+      <div style="display:flex;gap:12px;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:linear-gradient(135deg,#4b5563 25%,#6b7280 25%,#6b7280 50%,#4b5563 50%,#4b5563 75%,#6b7280 75%);background-size:4px 4px;"></div>
+          <span style="color:#9ca3af;font-size:12px;">Idle (棋盘格)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:#ef4444;animation:blink 0.5s infinite;"></div>
+          <span style="color:#ef4444;font-size:12px;">Waiting (闪烁红)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:linear-gradient(90deg,#60a5fa,#a78bfa,#60a5fa);background-size:200% 100%;animation:slide 1s infinite linear;"></div>
+          <span style="color:#a78bfa;font-size:12px;">Thinking (渐变流动)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:linear-gradient(90deg,#fb923c,#fbbf24,#fb923c);background-size:200% 100%;animation:slide 1s infinite linear;"></div>
+          <span style="color:#fb923c;font-size:12px;">Working (渐变流动)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:#22c55e;box-shadow:0 0 6px #22c55e;"></div>
+          <span style="color:#22c55e;font-size:12px;">Complete (发光效果)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:#dc2626;box-shadow:0 0 4px #dc2626;"></div>
+          <span style="color:#dc2626;font-size:12px;">Error (发光警告)</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>风格 C - 动态特效</h3>
+      <p>渐变流动动画、发光效果、棋盘格idle状态。更有科技感和动态表现力。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="pixel-d" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:20px;min-height:180px;">
+      <div style="display:flex;gap:12px;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;border:2px solid #6b7280;background:transparent;"></div>
+          <span style="color:#6b7280;font-size:12px;">Idle (空心框)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;border:2px solid #fbbf24;background:#fbbf24;animation:fill 0.8s infinite alternate;"></div>
+          <span style="color:#fbbf24;font-size:12px;">Waiting (填充动画)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:#8b5cf6;clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);animation:spin 2s infinite linear;"></div>
+          <span style="color:#8b5cf6;font-size:12px;">Thinking (旋转菱形)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:#f59e0b;animation:pulse 1s infinite;"></div>
+          <span style="color:#f59e0b;font-size:12px;">Working (脉冲方块)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;background:#10b981;clip-path:polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);"></div>
+          <span style="color:#10b981;font-size:12px;">Complete (实心方块)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid #ef4444;"></div>
+          <span style="color:#ef4444;font-size:12px;">Error (警告三角)</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>风格 D - 形状差异</h3>
+      <p>不同状态用不同形状区分：空心框、菱形、三角形。形状+颜色双重区分，辨识度更高。</p>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.6;transform:scale(0.9);} }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+@keyframes slide { 0%{background-position:0% 0%;} 100%{background-position:200% 0%;} }
+@keyframes fill { 0%{background:transparent;} 100%{background:#fbbf24;} }
+@keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+</style>

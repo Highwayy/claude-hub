@@ -198,33 +198,51 @@ class ClaudeMonitor : Form
         title.MouseDown += FormMouseDown;
 
         pinBtn = new Button();
-        pinBtn.Text = "P";
+        pinBtn.Text = "📌";
         pinBtn.Width = 24;
         pinBtn.Height = 24;
         pinBtn.Dock = DockStyle.Right;
         pinBtn.FlatStyle = FlatStyle.Flat;
-        pinBtn.BackColor = Color.FromArgb(46, 204, 113);
+        pinBtn.BackColor = Color.FromArgb(60, 60, 80);
         pinBtn.ForeColor = Color.White;
-        pinBtn.Font = new Font("Arial", 9, FontStyle.Bold);
+        pinBtn.Font = new Font("Segoe UI Symbol", 10);
         pinBtn.Cursor = Cursors.Hand;
         pinBtn.FlatAppearance.BorderSize = 0;
+        pinBtn.Margin = new Padding(2);
+        ToolTip pinTip = new ToolTip();
+        pinTip.SetToolTip(pinBtn, "钉在顶层");
         pinBtn.Click += (s, e) => {
             this.TopMost = !this.TopMost;
-            pinBtn.BackColor = this.TopMost ? Color.FromArgb(46, 204, 113) : Color.FromArgb(100, 100, 100);
+            pinBtn.BackColor = this.TopMost ? Color.FromArgb(46, 204, 113) : Color.FromArgb(60, 60, 80);
+        };
+        pinBtn.MouseEnter += (s, e) => {
+            pinBtn.BackColor = Color.FromArgb(80, 80, 100);
+        };
+        pinBtn.MouseLeave += (s, e) => {
+            pinBtn.BackColor = this.TopMost ? Color.FromArgb(46, 204, 113) : Color.FromArgb(60, 60, 80);
         };
 
         Button closeBtn = new Button();
-        closeBtn.Text = "X";
+        closeBtn.Text = "✕";
         closeBtn.Width = 24;
         closeBtn.Height = 24;
         closeBtn.Dock = DockStyle.Right;
         closeBtn.FlatStyle = FlatStyle.Flat;
-        closeBtn.BackColor = Color.FromArgb(231, 76, 60);
+        closeBtn.BackColor = Color.FromArgb(60, 60, 80);
         closeBtn.ForeColor = Color.White;
-        closeBtn.Font = new Font("Arial", 10);
+        closeBtn.Font = new Font("Segoe UI Symbol", 11);
         closeBtn.Cursor = Cursors.Hand;
         closeBtn.FlatAppearance.BorderSize = 0;
+        closeBtn.Margin = new Padding(2);
+        ToolTip closeTip = new ToolTip();
+        closeTip.SetToolTip(closeBtn, "关闭会话");
         closeBtn.Click += (s, e) => { timer.Stop(); animationTimer.Stop(); heartbeatTimer.Stop(); SaveWindowPosition(); this.Close(); };
+        closeBtn.MouseEnter += (s, e) => {
+            closeBtn.BackColor = Color.FromArgb(231, 76, 60);
+        };
+        closeBtn.MouseLeave += (s, e) => {
+            closeBtn.BackColor = Color.FromArgb(60, 60, 80);
+        };
 
         // Waiting 提示标签（初始隐藏）
         waitingLabel = new Label();
@@ -379,6 +397,19 @@ class ClaudeMonitor : Form
         return 0;
     }
 
+    private long GetJsonLong(string json, string key)
+    {
+        string search = "\"" + key + "\":";
+        int start = json.IndexOf(search);
+        if (start < 0) return 0;
+        start += search.Length;
+        while (start < json.Length && (json[start] == ' ' || json[start] == '\t')) start++;
+        int end = start;
+        while (end < json.Length && (json[end] >= '0' && json[end] <= '9')) end++;
+        if (end > start) return long.Parse(json.Substring(start, end - start));
+        return 0;
+    }
+
     private void SaveWindowPosition()
     {
         try
@@ -521,6 +552,8 @@ class ClaudeMonitor : Form
                     s.model = GetJsonString(obj, "model");
                     s.context = GetJsonString(obj, "context");
                     s.branch = GetJsonString(obj, "branch");
+                    s.userMessage = GetJsonString(obj, "userMessage");
+                    s.lastUpdate = GetJsonLong(obj, "lastUpdate");
                     list.Add(s);
                     objStart = -1;
                 }
@@ -537,7 +570,7 @@ class ClaudeMonitor : Form
         while (sessionControls.Count > sessions.Count)
         {
             var ctrl = sessionControls[sessionControls.Count - 1];
-            ctrl.MouseClick -= SessionControlMouseClick;
+            ctrl.OnToggleWindow = null;
             contentPanel.Controls.Remove(ctrl);
             ctrl.Dispose();
             sessionControls.RemoveAt(sessionControls.Count - 1);
@@ -552,7 +585,10 @@ class ClaudeMonitor : Form
                 var ctrl = new SessionControl();
                 ctrl.Left = 5;
                 ctrl.Width = 305;
-                ctrl.MouseClick += SessionControlMouseClick;
+                ctrl.OnToggleWindow = (sc) => {
+                    Log("Toggle window: " + sc.SessionId + ", windowHandle: " + sc.WindowHandle);
+                    ToggleClaudeWindow(sc.SessionId, sc.WindowHandle);
+                };
                 contentPanel.Controls.Add(ctrl);
                 sessionControls.Add(ctrl);
                 Log("Added SessionControl, count=" + sessionControls.Count);
@@ -583,101 +619,210 @@ class ClaudeMonitor : Form
         waitingLabel.Visible = hasWaitingSession;
     }
 
-    private void SessionControlMouseClick(object sender, MouseEventArgs e)
+    private void ToggleClaudeWindow(string sessionId, string windowHandle)
     {
-        if (e.Button == MouseButtons.Left)
-        {
-            var ctrl = sender as SessionControl;
-            if (ctrl != null && !string.IsNullOrEmpty(ctrl.SessionId))
-            {
-                _lastClickedSession = ctrl;
-                Log("Click on session: " + ctrl.SessionId + ", windowHandle: " + ctrl.WindowHandle);
-                ActivateClaudeWindow(ctrl.SessionId, ctrl.WindowHandle);
-            }
-        }
-        else if (e.Button == MouseButtons.Right)
-        {
-            var ctrl = sender as SessionControl;
-            if (ctrl != null)
-            {
-                _lastClickedSession = ctrl;
-            }
-        }
-    }
+        Log("Toggle: sessionId=" + sessionId + " windowHandle=" + windowHandle);
+        IntPtr hwnd = IntPtr.Zero;
 
-    private SessionControl _lastClickedSession = null;
-
-    private void ActivateClaudeWindow(string sessionId, string windowHandle)
-    {
-        // If we have a window handle, use it directly
+        // 优先使用 session 保存的窗口句柄
         if (!string.IsNullOrEmpty(windowHandle))
         {
             try
             {
-                IntPtr hwnd = new IntPtr(long.Parse(windowHandle));
-                if (NativeMethods.IsWindow(hwnd))
+                hwnd = new IntPtr(long.Parse(windowHandle));
+                if (!NativeMethods.IsWindow(hwnd))
                 {
-                    // Get window position before activating
-                    NativeMethods.RECT rect;
-                    if (NativeMethods.GetWindowRect(hwnd, out rect))
-                    {
-                        Log("Activating window " + windowHandle + " at position (" + rect.Left + "," + rect.Top + ")");
-                    }
-                    // Force bring window to foreground
-                    ForceForegroundWindow(hwnd);
-                    return;
+                    Log("Saved handle " + windowHandle + " is invalid");
+                    hwnd = IntPtr.Zero;
                 }
                 else
                 {
-                    Log("Window handle " + windowHandle + " is not valid");
+                    // 检查窗口类型
+                    StringBuilder classBuf = new StringBuilder(256);
+                    NativeMethods.GetClassName(hwnd, classBuf, classBuf.Capacity);
+                    string className = classBuf.ToString();
+                    Log("Saved handle class: " + className);
+
+                    // 如果是控制台窗口，找到对应的 CASCADIA 窗口
+                    if (className == "ConsoleWindowClass" || className == "PseudoConsoleWindow")
+                    {
+                        IntPtr cascadioHwnd = FindCascadiaForConsole(hwnd);
+                        if (cascadioHwnd != IntPtr.Zero)
+                        {
+                            Log("Found CASCADIA window " + cascadioHwnd + " for console " + hwnd);
+                            hwnd = cascadioHwnd;
+                        }
+                    }
                 }
             }
-            catch (Exception ex)
+            catch { hwnd = IntPtr.Zero; }
+        }
+
+        // 如果没有有效句柄，查找终端窗口
+        if (hwnd == IntPtr.Zero)
+        {
+            hwnd = FindTerminalWindow();
+        }
+
+        if (hwnd != IntPtr.Zero && hwnd != this.Handle)
+        {
+            try
             {
-                Log("Error activating window: " + ex.Message);
+                if (NativeMethods.IsIconic(hwnd))
+                {
+                    Log("Terminal minimized, activating hwnd=" + hwnd);
+                    ForceForegroundWindow(hwnd);
+                }
+                else
+                {
+                    Log("Terminal visible, minimizing hwnd=" + hwnd);
+                    NativeMethods.ShowWindow(hwnd, 6);
+                }
             }
+            catch (Exception ex) { Log("Toggle error: " + ex.Message); }
         }
         else
         {
-            Log("No window handle for session " + sessionId);
+            Log("No valid terminal window found");
         }
-        // 不再 fallback 到其他窗口，避免激活错误的窗口
+    }
+
+    // 找到包含指定控制台窗口的 CASCADIA 窗口
+    private IntPtr FindCascadiaForConsole(IntPtr consoleHwnd)
+    {
+        // Windows Terminal 下，控制台窗口和 CASCADIA 窗口没有直接的父子关系
+        // 但我们可以尝试：
+        // 1. 检查控制台窗口的所有者
+        // 2. 或者通过进程关系找到
+        return IntPtr.Zero;
+    }
+
+    // All terminal windows, indexed by order of discovery
+    private List<IntPtr> allTerminalWindows = new List<IntPtr>();
+    private int lastToggleIndex = -1;
+
+    private IntPtr lastFoundHandle = IntPtr.Zero;
+
+    // 查找终端窗口（Windows Terminal）
+    private IntPtr FindTerminalWindow()
+    {
+        IntPtr selfHwnd = this.Handle;
+
+        // 枚举所有 CASCADIA_HOSTING_WINDOW_CLASS 窗口
+        allTerminalWindows.Clear();
+        NativeMethods.EnumWindows((hwnd, lParam) => {
+            if (hwnd == selfHwnd) return true;
+            try
+            {
+                StringBuilder classBuf = new StringBuilder(256);
+                NativeMethods.GetClassName(hwnd, classBuf, classBuf.Capacity);
+                if (classBuf.ToString() == "CASCADIA_HOSTING_WINDOW_CLASS" && NativeMethods.IsWindow(hwnd))
+                {
+                    allTerminalWindows.Add(hwnd);
+                }
+            }
+            catch { }
+            return true;
+        }, IntPtr.Zero);
+
+        if (allTerminalWindows.Count == 0) return IntPtr.Zero;
+
+        // 只有一个窗口：直接返回
+        if (allTerminalWindows.Count == 1)
+        {
+            return allTerminalWindows[0];
+        }
+
+        // 多个窗口：找第一个可见的（最小化它）
+        // 如果都最小化了，返回最后一个最小化的（恢复它）
+        int visibleIndex = -1;
+        for (int i = 0; i < allTerminalWindows.Count; i++)
+        {
+            if (!NativeMethods.IsIconic(allTerminalWindows[i]))
+            {
+                visibleIndex = i;
+                break;
+            }
+        }
+
+        IntPtr result;
+        if (visibleIndex >= 0)
+        {
+            result = allTerminalWindows[visibleIndex];
+        }
+        else
+        {
+            // 都最小化了，返回之前找到的那个（用于恢复）
+            result = lastFoundHandle != IntPtr.Zero ? lastFoundHandle : allTerminalWindows[0];
+        }
+
+        lastFoundHandle = result;
+        return result;
     }
 
     private void ForceForegroundWindow(IntPtr hwnd) {
-        // 方法1: Alt 键技巧（解决 Windows 前台窗口限制）
-        NativeMethods.keybd_event(0x12, 0, 0, 0);  // Alt down
-        NativeMethods.keybd_event(0x12, 0, 2, 0);  // Alt up
-
-        // 如果最小化，先恢复
-        if (NativeMethods.IsIconic(hwnd)) {
-            NativeMethods.ShowWindow(hwnd, 9); // SW_RESTORE
-        }
-
-        // 尝试直接切换
-        if (NativeMethods.SetForegroundWindow(hwnd)) {
-            NativeMethods.SetFocus(hwnd);
+        // Validate handle before any operation
+        if (hwnd == IntPtr.Zero || !NativeMethods.IsWindow(hwnd)) {
+            Log("ForceForegroundWindow: invalid handle");
             return;
         }
 
-        // 备用: 线程附加方式
-        IntPtr foregroundHwnd = NativeMethods.GetForegroundWindow();
-        int currentThread = NativeMethods.GetCurrentThreadId();
-        int foregroundThread = NativeMethods.GetWindowThreadProcessId(foregroundHwnd, IntPtr.Zero);
-        int targetThread = NativeMethods.GetWindowThreadProcessId(hwnd, IntPtr.Zero);
-
-        if (currentThread != targetThread) {
-            NativeMethods.AttachThreadInput(currentThread, foregroundThread, true);
-            NativeMethods.AttachThreadInput(currentThread, targetThread, true);
+        // 方法1: SendInput Alt 键技巧（替代已弃用的 keybd_event，解决 Windows 前台窗口限制）
+        try {
+            NativeMethods.SendAltKey();
+        } catch (Exception ex) {
+            Log("SendAltKey error: " + ex.Message);
         }
 
-        NativeMethods.ShowWindow(hwnd, 5); // SW_SHOW
-        NativeMethods.SetForegroundWindow(hwnd);
-        NativeMethods.SetFocus(hwnd);
+        // 如果最小化，先恢复
+        try {
+            if (NativeMethods.IsWindow(hwnd) && NativeMethods.IsIconic(hwnd)) {
+                NativeMethods.ShowWindow(hwnd, 9); // SW_RESTORE
+            }
+        } catch (Exception ex) {
+            Log("Restore window error: " + ex.Message);
+            return;
+        }
 
-        if (currentThread != targetThread) {
-            NativeMethods.AttachThreadInput(currentThread, foregroundThread, false);
-            NativeMethods.AttachThreadInput(currentThread, targetThread, false);
+        // 尝试直接切换
+        try {
+            if (NativeMethods.IsWindow(hwnd) && NativeMethods.SetForegroundWindow(hwnd)) {
+                NativeMethods.SetFocus(hwnd);
+                return;
+            }
+        } catch (Exception ex) {
+            Log("SetForegroundWindow direct error: " + ex.Message);
+        }
+
+        // 备用: 线程附加方式（增加安全检查）
+        try {
+            IntPtr foregroundHwnd = NativeMethods.GetForegroundWindow();
+            int foregroundThread = NativeMethods.GetWindowThreadProcessId(foregroundHwnd, IntPtr.Zero);
+            int targetThread = NativeMethods.GetWindowThreadProcessId(hwnd, IntPtr.Zero);
+
+            // 安全检查：确保线程 ID 有效且不相同
+            if (foregroundThread > 0 && targetThread > 0 && foregroundThread != targetThread) {
+                // 检查是否已经是附加状态（避免递归附加导致死锁）
+                bool attached1 = NativeMethods.AttachThreadInput(foregroundThread, targetThread, true);
+                if (attached1) {
+                    try {
+                        if (NativeMethods.IsWindow(hwnd)) {
+                            NativeMethods.ShowWindow(hwnd, 5); // SW_SHOW
+                            NativeMethods.SetForegroundWindow(hwnd);
+                            NativeMethods.SetFocus(hwnd);
+                        }
+                    } finally {
+                        NativeMethods.AttachThreadInput(foregroundThread, targetThread, false);
+                    }
+                }
+            } else if (NativeMethods.IsWindow(hwnd)) {
+                // 同一线程或无效线程，直接操作
+                NativeMethods.ShowWindow(hwnd, 5);
+                NativeMethods.SetForegroundWindow(hwnd);
+                NativeMethods.SetFocus(hwnd);
+            }
+        } catch (Exception ex) {
+            Log("Thread attach error: " + ex.Message);
         }
     }
 
@@ -685,7 +830,12 @@ class ClaudeMonitor : Form
     {
         string search = "\"" + key + "\":\"";
         int start = json.IndexOf(search);
-        if (start < 0) return "";
+        if (start < 0) {
+            // 也尝试查找 "key":value 格式（非字符串值如 null）
+            string searchNull = "\"" + key + "\":null";
+            if (json.IndexOf(searchNull) >= 0) return "";
+            return "";
+        }
         start += search.Length;
         int end = json.IndexOf("\"", start);
         if (end < 0) return "";
@@ -895,12 +1045,14 @@ class SessionData
     public string model;
     public string context;
     public string branch;
+    public string userMessage;
+    public long lastUpdate;
 }
 
 class SessionControl : Panel
 {
     private PixelHorse horse;
-    private Label statusLbl, projectLbl, infoLbl, taskLbl;
+    private Label statusLbl, projectLbl, sepLbl, branchLbl, modelLbl, ctxSepLbl, contextLbl, taskLbl, userMsgLbl, expandBtn, deleteBtn, clickLayerLbl;
     private System.Windows.Forms.Timer flashTimer;
     private string lastState = "";
     private int flashCount = 0;
@@ -908,14 +1060,34 @@ class SessionControl : Panel
     private string _currentTask = "";
     private string _sessionId = "";
     private string _windowHandle = "";
+    private long _lastUpdate = 0;
     private int _requiredHeight = 65;
     private bool _flashBorder = false;
-    private Color _borderColor = Color.FromArgb(243, 156, 18); // #f39c12
+    private bool _flashStoppedByClick = false;
+    private Color _borderColor = Color.FromArgb(243, 156, 18);
     private int _animTick = 0;
+    private bool _expanded = false;
+
+    private string _fullTaskText = "";
+
+    private void Log(string msg)
+    {
+        try
+        {
+            var logFile = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "claude-monitor", "monitor.log");
+            var dir = System.IO.Path.GetDirectoryName(logFile);
+            if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.AppendAllText(logFile, "[" + DateTime.Now.ToString("HH:mm:ss") + "] " + msg + "\n");
+        }
+        catch { }
+    }
+
+    public Action<SessionControl> OnToggleWindow;
 
     public string CurrentTask { get { return _currentTask; } private set { _currentTask = value; } }
     public string SessionId { get { return _sessionId; } }
     public string WindowHandle { get { return _windowHandle; } }
+    public long LastUpdate { get { return _lastUpdate; } }
     public int RequiredHeight { get { return _requiredHeight; } }
 
     public SessionControl()
@@ -930,20 +1102,78 @@ class SessionControl : Panel
         horse.Location = new Point(5, 5);  // Centered: (28-20)/2 + 4 = 8, but slightly up looks better
         horse.Size = new Size(24, 20);
 
-        statusLbl = new Label() { Location = new Point(32, 4), Size = new Size(55, 14), ForeColor = Color.FromArgb(180, 180, 180), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8) };
-        projectLbl = new Label() { Location = new Point(88, 4), Size = new Size(207, 14), ForeColor = Color.FromArgb(102, 126, 234), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8, FontStyle.Bold) };
+        projectLbl = new Label() { Location = new Point(32, 4), Size = new Size(150, 14), ForeColor = Color.FromArgb(102, 126, 234), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8, FontStyle.Bold), AutoSize = true };
+        sepLbl = new Label() { Location = new Point(88, 4), Size = new Size(20, 14), ForeColor = Color.FromArgb(120, 120, 120), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8), Text = " | ", AutoSize = true };
+        branchLbl = new Label() { Location = new Point(100, 4), Size = new Size(100, 14), ForeColor = Color.FromArgb(46, 204, 113), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8), AutoSize = true };
 
-        // Info label for model/context/branch (right of horse, second row)
-        infoLbl = new Label();
-        infoLbl.Location = new Point(32, 18);
-        infoLbl.Size = new Size(263, 14);
-        infoLbl.ForeColor = Color.FromArgb(140, 140, 140);
-        infoLbl.BackColor = Color.Transparent;
-        infoLbl.Font = new Font("Segoe UI", 7.5f);
+        // 折叠按钮 - 放在消息右边
+        expandBtn = new Label();
+        expandBtn.Text = "+";
+        expandBtn.Size = new Size(20, 20);
+        expandBtn.Location = new Point(283, 34);  // 初始位置，会在 UpdateLayout 中更新
+        expandBtn.ForeColor = Color.FromArgb(140, 140, 140);
+        expandBtn.BackColor = Color.FromArgb(50, 50, 70);
+        expandBtn.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+        expandBtn.Cursor = Cursors.Hand;
+        expandBtn.TextAlign = ContentAlignment.MiddleCenter;
+        expandBtn.MouseClick += (s, e) => { ToggleExpand(); };
+
+        // 删除按钮 - 右上角
+        deleteBtn = new Label();
+        deleteBtn.Text = "×";
+        deleteBtn.Size = new Size(20, 20);
+        deleteBtn.Location = new Point(283, 4);  // 右上角
+        deleteBtn.ForeColor = Color.FromArgb(231, 76, 60);
+        deleteBtn.BackColor = Color.FromArgb(50, 50, 70);
+        deleteBtn.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+        deleteBtn.Cursor = Cursors.Hand;
+        deleteBtn.TextAlign = ContentAlignment.MiddleCenter;
+        deleteBtn.MouseClick += (s, e) => { DeleteSession(); };
+
+        // 第二行：状态 + 模型 + 上下文信息（拆分为多个 Label）
+        statusLbl = new Label() { Location = new Point(32, 18), Size = new Size(65, 14), ForeColor = Color.FromArgb(180, 180, 180), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8) };
+
+        // 模型 Label
+        modelLbl = new Label();
+        modelLbl.Location = new Point(97, 18);
+        modelLbl.Size = new Size(80, 14);
+        modelLbl.ForeColor = Color.FromArgb(140, 140, 140);
+        modelLbl.BackColor = Color.Transparent;
+        modelLbl.Font = new Font("Segoe UI", 8);
+
+        // 分隔符 " | "
+        ctxSepLbl = new Label();
+        ctxSepLbl.Location = new Point(177, 18);
+        ctxSepLbl.Size = new Size(20, 14);
+        ctxSepLbl.ForeColor = Color.FromArgb(120, 120, 120);
+        ctxSepLbl.BackColor = Color.Transparent;
+        ctxSepLbl.Font = new Font("Segoe UI", 8);
+        ctxSepLbl.Text = " | ";
+
+        // 上下文 Label（仅显示，无点击事件）
+        contextLbl = new Label();
+        contextLbl.Location = new Point(197, 18);
+        contextLbl.Size = new Size(80, 14);
+        contextLbl.ForeColor = Color.FromArgb(140, 140, 140);
+        contextLbl.BackColor = Color.Transparent;
+        contextLbl.Font = new Font("Segoe UI", 8);
+
+        // 用户消息 Label（浅蓝色）- 固定一行，超出显示省略号
+        userMsgLbl = new Label();
+        userMsgLbl.Name = "userMsgLbl";
+        userMsgLbl.Location = new Point(5, 34);
+        userMsgLbl.Size = new Size(260, 18);
+        userMsgLbl.ForeColor = Color.FromArgb(100, 180, 255);
+        userMsgLbl.BackColor = Color.Transparent;
+        userMsgLbl.Font = new Font("Segoe UI", 8);
+        userMsgLbl.AutoSize = false;
+        userMsgLbl.AutoEllipsis = true;
+        userMsgLbl.Text = "";
 
         taskLbl = new Label();
-        taskLbl.Location = new Point(5, 34);
-        taskLbl.Size = new Size(290, 40);
+        taskLbl.Name = "taskLbl";
+        taskLbl.Location = new Point(5, 62);
+        taskLbl.Size = new Size(260, 28);
         taskLbl.ForeColor = Color.White;
         taskLbl.BackColor = Color.Transparent;
         taskLbl.Font = new Font("Segoe UI", 9);
@@ -957,21 +1187,102 @@ class SessionControl : Panel
         flashTimer.Interval = 150;
         flashTimer.Tick += FlashTick;
 
-        // Make all child controls also trigger click on parent
-        foreach (Control c in new Control[] { horse, statusLbl, projectLbl, infoLbl, taskLbl })
+        // 消息区域点击：最小化时激活，否则最小化
+        MouseEventHandler toggleHandler = (s, e) => {
+            if (e.Button == MouseButtons.Left) {
+                Log("Toggle click on SessionControl, sessionId=" + _sessionId);
+                StopFlashing();
+                if (OnToggleWindow != null) OnToggleWindow(this);
+            }
+        };
+
+        // 消息区域中间空白部分的点击层（填补 userMsgLbl 和 taskLbl 之间的空隙）
+        // userMsgLbl: y=34, height=18 -> 结束于 y=52
+        // taskLbl: y=62, height=28 -> 开始于 y=62
+        // 中间空隙: y=52 到 y=62
+        clickLayerLbl = new Label();
+        clickLayerLbl.Name = "clickLayerLbl";
+        clickLayerLbl.Location = new Point(5, 52);
+        clickLayerLbl.Size = new Size(260, 10);  // 只覆盖中间空隙
+        clickLayerLbl.BackColor = Color.Transparent;
+        clickLayerLbl.Cursor = Cursors.Hand;
+        clickLayerLbl.MouseDown += toggleHandler;
+
+        // 用户消息和AI消息区域可点击切换窗口
+        userMsgLbl.MouseDown += toggleHandler;
+        userMsgLbl.Cursor = Cursors.Hand;
+        taskLbl.MouseDown += toggleHandler;
+        taskLbl.Cursor = Cursors.Hand;
+
+        // 折叠按钮和删除按钮不触发 SessionClick
+        expandBtn.MouseDown += (s, e) => { };
+
+        this.Controls.AddRange(new Control[] { horse, statusLbl, projectLbl, sepLbl, branchLbl, modelLbl, ctxSepLbl, contextLbl, taskLbl, userMsgLbl, expandBtn, deleteBtn, clickLayerLbl });
+    }
+
+    private void ToggleExpand()
+    {
+        _expanded = !_expanded;
+        expandBtn.Text = _expanded ? "-" : "+";
+        UpdateLayout();
+    }
+
+    private void UpdateLayout()
+    {
+        // 使用 SuspendLayout 减少重绘，避免卡顿
+        this.SuspendLayout();
+
+        int y = 34;
+
+        // 用户消息 - 固定一行，超出用省略号
+        bool hasUserMsg = !string.IsNullOrEmpty(userMsgLbl.Text);
+        userMsgLbl.Visible = hasUserMsg;
+        if (hasUserMsg)
         {
-            c.MouseClick += (s, e) => { this.OnMouseClick(e); };
-            c.Cursor = Cursors.Hand;
+            userMsgLbl.Top = y;
+            userMsgLbl.Left = 5;
+            y += 24;  // 固定间距
         }
 
-        this.Controls.AddRange(new Control[] { horse, statusLbl, projectLbl, infoLbl, taskLbl });
+        // AI 消息 - 默认一行，超过一行显示展开按钮
+        taskLbl.Top = y;
+        taskLbl.Left = 5;
+        taskLbl.Width = 260;
+        int fullHeight = CalculateTextHeight(_fullTaskText, 260);
+        bool needExpand = fullHeight > 18;
 
-        // 右键菜单 - 删除会话
-        ContextMenuStrip sessionMenu = new ContextMenuStrip();
-        ToolStripMenuItem deleteItem = new ToolStripMenuItem("删除会话");
-        deleteItem.Click += (s, e) => DeleteSession();
-        sessionMenu.Items.Add(deleteItem);
-        this.ContextMenuStrip = sessionMenu;
+        // 设置文本和高度
+        taskLbl.Text = _fullTaskText;
+        if (_expanded && needExpand)
+        {
+            taskLbl.Height = fullHeight;
+        }
+        else
+        {
+            taskLbl.Height = 18;
+        }
+
+        // 删除按钮 - 固定在右上角
+        deleteBtn.Location = new Point(283, 4);
+        deleteBtn.BringToFront();
+
+        // 展开按钮 - 在消息右边
+        expandBtn.Visible = needExpand;
+        if (needExpand)
+        {
+            expandBtn.Left = 283;  // 右边界，和删除按钮同一列但不同行
+            expandBtn.Top = y + 2;
+            expandBtn.BringToFront();
+        }
+
+        y += taskLbl.Height + 8;
+
+        _requiredHeight = y;
+        _requiredHeight = Math.Max(_requiredHeight, 50);
+        _requiredHeight = Math.Min(_requiredHeight, 200);
+        this.Height = _requiredHeight;
+
+        this.ResumeLayout();
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -1003,6 +1314,13 @@ class SessionControl : Panel
         }
     }
 
+    public void StopFlashing()
+    {
+        _flashStoppedByClick = true;
+        _flashBorder = false;
+        this.Invalidate();
+    }
+
     public void Animate()
     {
         _animTick++;
@@ -1030,59 +1348,88 @@ class SessionControl : Panel
     {
         _sessionId = data.id ?? "";
         _windowHandle = data.windowHandle ?? "";
+        _lastUpdate = data.lastUpdate;
         // Debug log
         try {
             var logFile = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "claude-monitor", "monitor.log");
             var dir = System.IO.Path.GetDirectoryName(logFile);
             if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
-            System.IO.File.AppendAllText(logFile, "[" + DateTime.Now.ToString("HH:mm:ss") + "] UpdateData: sessionId=" + _sessionId + ", windowHandle=" + _windowHandle + ", project=" + data.project + "\n");
+            System.IO.File.AppendAllText(logFile, "[" + DateTime.Now.ToString("HH:mm:ss") + "] UpdateData: sessionId=" + _sessionId + ", windowHandle=" + _windowHandle + ", project=" + data.project + ", branch=" + (data.branch ?? "null") + "\n");
         } catch { }
+
+        // 项目名
         projectLbl.Text = data.project;
 
-        // DEBUG: Log update
-        System.Diagnostics.Debug.WriteLine("UpdateData: state=" + data.state + ", project=" + data.project);
-
-        // Build info line: model | context ctx | branch
-        var infoParts = new System.Collections.Generic.List<string>();
-        if (!string.IsNullOrEmpty(data.model))
-            infoParts.Add(data.model);
-        if (!string.IsNullOrEmpty(data.context))
-            infoParts.Add(data.context + " ctx");
-        if (!string.IsNullOrEmpty(data.branch))
-            infoParts.Add(data.branch);
-        infoLbl.Text = string.Join(" | ", infoParts);
-
-        // Adjust infoLbl visibility
-        bool hasInfo = infoParts.Count > 0;
-        infoLbl.Visible = hasInfo;
-
-        CurrentTask = data.task;
-        string taskText = string.IsNullOrEmpty(data.task) ? "..." : data.task;
-
-        // Task label is below the info line
-        taskLbl.Top = 34;
-
-        // Calculate required height for task text (max 100px for task area)
-        int taskHeight = CalculateTextHeight(taskText, 290);
-        int maxTaskHeight = 100;
-        if (taskHeight > maxTaskHeight) {
-            taskHeight = maxTaskHeight;
-            // Show full text in tooltip
-            toolTip.SetToolTip(taskLbl, taskText);
-        } else if (taskText.Length > 50) {
-            toolTip.SetToolTip(taskLbl, taskText);
+        // 分支：竖线灰色，分支名绿色
+        if (!string.IsNullOrEmpty(data.branch)) {
+            sepLbl.Visible = true;
+            branchLbl.Text = data.branch;
+            branchLbl.Visible = true;
+            // 定位在项目名后面
+            sepLbl.Left = projectLbl.Right + 2;
+            branchLbl.Left = sepLbl.Right + 2;
         } else {
-            toolTip.RemoveAll();
+            sepLbl.Visible = false;
+            branchLbl.Visible = false;
         }
 
-        // Calculate total height: header(34) + taskHeight + padding(10)
-        _requiredHeight = 34 + taskHeight + 10;
-        _requiredHeight = Math.Max(_requiredHeight, 50); // minimum height
-        _requiredHeight = Math.Min(_requiredHeight, 140); // maximum height per session
+        // 模型和上下文分开显示
+        bool hasModel = !string.IsNullOrEmpty(data.model);
+        bool hasContext = !string.IsNullOrEmpty(data.context);
 
-        this.Height = _requiredHeight;
-        taskLbl.Height = taskHeight;
-        taskLbl.Text = taskText;
+        if (hasModel)
+        {
+            modelLbl.Text = data.model;
+            modelLbl.Visible = true;
+            modelLbl.BringToFront();
+        }
+        else
+        {
+            modelLbl.Visible = false;
+        }
+
+        if (hasModel && hasContext)
+        {
+            ctxSepLbl.Left = modelLbl.Right + 2;
+            ctxSepLbl.Visible = true;
+        }
+        else
+        {
+            ctxSepLbl.Visible = false;
+        }
+
+        if (hasContext)
+        {
+            contextLbl.Text = data.context + " ctx";
+            if (hasModel)
+                contextLbl.Left = ctxSepLbl.Right + 2;
+            else
+                contextLbl.Left = statusLbl.Right + 2;
+            contextLbl.Visible = true;
+            contextLbl.BringToFront();
+        }
+        else
+        {
+            contextLbl.Visible = false;
+        }
+
+        // 用户消息
+        if (!string.IsNullOrEmpty(data.userMessage))
+        {
+            userMsgLbl.Text = "> " + data.userMessage;
+            userMsgLbl.Visible = true;
+        }
+        else
+        {
+            userMsgLbl.Text = "";
+            userMsgLbl.Visible = false;
+        }
+
+        CurrentTask = data.task;
+        _fullTaskText = string.IsNullOrEmpty(data.task) ? "..." : data.task;
+
+        // 更新布局
+        UpdateLayout();
 
         if (data.state == "complete" && lastState != "complete")
         {
@@ -1092,6 +1439,7 @@ class SessionControl : Panel
 
         if (data.state != lastState)
         {
+            _flashStoppedByClick = false;
             horse.SetState(data.state);
         }
 
@@ -1101,18 +1449,17 @@ class SessionControl : Panel
             statusLbl.Text = "Idle";
             if (_flashBorder) {
                 _flashBorder = false;
-                this.Invalidate(); // 立即清除边框
+                this.Invalidate();
             }
             statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
         }
         else if (data.state == "waiting") {
             statusLbl.Text = "Waiting";
-            if (!_flashBorder) {
+            if (!_flashBorder && !_flashStoppedByClick) {
                 _flashBorder = true;
-                this.Invalidate(); // 立即开始闪烁
+                this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(243, 156, 18); // 橙色
-            taskLbl.Text = " " + taskText;
+            statusLbl.ForeColor = Color.FromArgb(243, 156, 18);
         }
         else if (data.state == "thinking") { statusLbl.Text = "Thinking"; }
         else if (data.state == "working") { statusLbl.Text = "Working"; }
@@ -1120,12 +1467,14 @@ class SessionControl : Panel
             statusLbl.Text = "Done";
             // Show completion message with checkmark
             if (!string.IsNullOrEmpty(data.task)) {
-                taskLbl.Text = "✓ " + taskText;
+                taskLbl.Text = "✓ " + _fullTaskText;
                 taskLbl.ForeColor = Color.FromArgb(46, 204, 113);
             }
         }
         else if (data.state == "error") { statusLbl.Text = "Error"; }
         else { statusLbl.Text = data.state; }
+
+        statusLbl.BringToFront();
 
         // Reset task label color for non-complete states
         if (data.state != "complete") {
@@ -1522,6 +1871,8 @@ class NativeMethods
     [DllImport("user32.dll")]
     public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
     [DllImport("user32.dll")]
+    public static extern bool PostMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+    [DllImport("user32.dll")]
     public static extern bool ReleaseCapture();
     [DllImport("dwmapi.dll")]
     public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attr, ref int value, int size);
@@ -1530,11 +1881,15 @@ class NativeMethods
     [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hWnd);
     [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport("user32.dll")]
     public static extern bool IsIconic(IntPtr hWnd);
     [DllImport("user32.dll")]
     public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);  // GW_HWNDNEXT=2, GW_HWNDPREV=3
     [DllImport("user32.dll")]
     public static extern int GetWindowThreadProcessId(IntPtr hWnd, IntPtr ProcessId);
     [DllImport("user32.dll")]
@@ -1544,9 +1899,47 @@ class NativeMethods
     [DllImport("kernel32.dll")]
     public static extern int GetCurrentThreadId();
     [DllImport("user32.dll")]
-    public static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
+    public static extern uint SendInput(uint nInputs, [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs, int cbSize);
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")]
+    public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+    [DllImport("user32.dll")]
+    public static extern int GetWindowTextLength(IntPtr hWnd);
+
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    // SendAltKey: 使用 SendInput 替代已弃用的 keybd_event
+    public static void SendAltKey() {
+        try {
+            var inputs = new INPUT[2];
+            int structSize = Marshal.SizeOf(typeof(INPUT));
+
+            // Alt down
+            inputs[0] = new INPUT();
+            inputs[0].type = 1; // INPUT_KEYBOARD
+            inputs[0].U.ki.wVk = 0x12; // VK_MENU (Alt)
+            inputs[0].U.ki.wScan = 0;
+            inputs[0].U.ki.dwFlags = 0; // KEYEVENTF_KEYDOWN
+            inputs[0].U.ki.time = 0;
+            inputs[0].U.ki.dwExtraInfo = IntPtr.Zero;
+
+            // Alt up
+            inputs[1] = new INPUT();
+            inputs[1].type = 1;
+            inputs[1].U.ki.wVk = 0x12;
+            inputs[1].U.ki.wScan = 0;
+            inputs[1].U.ki.dwFlags = 0x0002; // KEYEVENTF_KEYUP
+            inputs[1].U.ki.time = 0;
+            inputs[1].U.ki.dwExtraInfo = IntPtr.Zero;
+
+            SendInput(2, inputs, structSize);
+        } catch { }
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT
@@ -1555,5 +1948,50 @@ class NativeMethods
         public int Top;
         public int Right;
         public int Bottom;
+    }
+
+    // SendInput 结构 - 使用正确的大小
+    [StructLayout(LayoutKind.Sequential)]
+    public struct INPUT
+    {
+        public uint type;  // 1 = KEYBOARD
+        public InputUnion U;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct InputUnion
+    {
+        [FieldOffset(0)] public KEYBDINPUT ki;
+        [FieldOffset(0)] public MOUSEINPUT mi;
+        [FieldOffset(0)] public HARDWAREINPUT hi;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KEYBDINPUT
+    {
+        public ushort wVk;
+        public ushort wScan;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public uint mouseData;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct HARDWAREINPUT
+    {
+        public uint uMsg;
+        public ushort wParamL;
+        public ushort wParamH;
     }
 }

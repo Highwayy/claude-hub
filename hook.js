@@ -15,6 +15,64 @@ const PORT = 18989;
 const HOOK_DIR = __dirname;
 const DEBUG_FILE = path.join(process.env.APPDATA || process.env.HOME, 'claude-monitor', 'hook-debug.log');
 
+// 项目操作统计（sessionId -> {project -> count}）
+const projectStats = {};
+
+// 从文件路径提取项目名（取项目根目录或最后两级目录）
+function extractProjectFromPath(filePath, cwd) {
+    if (!filePath) return null;
+
+    // 标准化路径
+    const normalized = filePath.replace(/\\/g, '/');
+
+    // 尝试找到项目根目录（包含 .git 的目录）
+    let dir = path.dirname(normalized);
+    while (dir && dir !== '.' && dir !== '/') {
+        const gitDir = path.join(dir, '.git');
+        try {
+            if (fs.existsSync(gitDir)) {
+                return path.basename(dir);
+            }
+        } catch (e) {}
+        const parent = path.dirname(dir);
+        if (parent === dir) break;
+        dir = parent;
+    }
+
+    // 回退：取最后两级目录或最后一级
+    const parts = normalized.split('/').filter(p => p);
+    if (parts.length >= 2) {
+        // 如果路径很长，取倒数第二级（项目名）+ 最后一级
+        return parts[parts.length - 2] || parts[parts.length - 1];
+    }
+    return parts[parts.length - 1] || null;
+}
+
+// 更新项目统计并返回最活跃的项目
+function updateProjectStats(sessionId, filePath, cwd) {
+    if (!sessionId) return null;
+
+    const projectName = extractProjectFromPath(filePath, cwd);
+    if (!projectName) return null;
+
+    if (!projectStats[sessionId]) {
+        projectStats[sessionId] = {};
+    }
+    projectStats[sessionId][projectName] = (projectStats[sessionId][projectName] || 0) + 1;
+
+    // 返回操作最多的项目
+    const stats = projectStats[sessionId];
+    let maxCount = 0;
+    let activeProject = null;
+    for (const [proj, count] of Object.entries(stats)) {
+        if (count > maxCount) {
+            maxCount = count;
+            activeProject = proj;
+        }
+    }
+    return activeProject;
+}
+
 // 通过 PID 获取窗口句柄
 function getWindowHandleByPid(pid) {
     try {
@@ -22,7 +80,7 @@ function getWindowHandleByPid(pid) {
         const scriptPath = path.join(HOOK_DIR, 'find-window-by-pid.ps1');
         const result = execSync(
             'powershell -ExecutionPolicy Bypass -File "' + scriptPath + '" -processId ' + pid,
-            { encoding: 'utf8', timeout: 3000 }
+            { encoding: 'utf8', timeout: 10000 }
         );
         const handle = result.trim();
         if (handle && handle !== '0') {
@@ -32,6 +90,26 @@ function getWindowHandleByPid(pid) {
         log('getWindowHandleByPid: no handle for pid=' + pid);
     } catch (e) {
         log('getWindowHandleByPid error: ' + e.message);
+    }
+    return null;
+}
+
+// 获取当前进程的控制台窗口句柄
+function getConsoleWindowHandle() {
+    try {
+        if (process.platform !== 'win32') return null;
+        const scriptPath = path.join(HOOK_DIR, 'get-console-window.ps1');
+        const result = execSync(
+            'powershell -ExecutionPolicy Bypass -File "' + scriptPath + '"',
+            { encoding: 'utf8', timeout: 5000 }
+        );
+        const handle = result.trim();
+        if (handle && handle !== '0') {
+            log('getConsoleWindowHandle: handle=' + handle);
+            return handle;
+        }
+    } catch (e) {
+        log('getConsoleWindowHandle error: ' + e.message);
     }
     return null;
 }
@@ -252,11 +330,19 @@ function fallbackStartMonitor() {
     }
 }
 
-async function getGitBranch(cwd) {
-    if (!cwd) return null;
+async function getGitBranch(dir) {
+    if (!dir) return null;
+    try {
+        // 如果是文件路径，取其目录
+        const stat = fs.statSync(dir);
+        if (stat.isFile()) {
+            dir = path.dirname(dir);
+        }
+    } catch (e) {}
+
     try {
         const result = execSync('git branch --show-current', {
-            cwd: cwd,
+            cwd: dir,
             encoding: 'utf8',
             timeout: 2000
         });
@@ -500,14 +586,15 @@ function extractTaskFromInput(input) {
         }
     }
 
-    if (hookEvent === 'UserPromptSubmit' && input.user_prompt) {
+    if (hookEvent === 'UserPromptSubmit' && input.prompt) {
         return {
             state: 'working',
-            task: truncate(input.user_prompt, 100),
+            task: 'Processing request...',
             message: 'Processing user request...',
             model: model,
             context: context,
-            branch: null
+            branch: null,
+            userMessage: truncate(input.prompt, 200)
         };
     }
 
@@ -628,6 +715,13 @@ async function main() {
         await startServerAndMonitor();
         // Wait a bit for server to be ready
         await new Promise(r => setTimeout(r, 2000));
+    } else {
+        // Server is running, check if Monitor is still alive
+        const monitorStatus = await getMonitorStatus();
+        if (!monitorStatus.running || !(await checkProcessExists(monitorStatus.pid))) {
+            log('Monitor not running, starting...');
+            await ensureMonitorRunning();
+        }
     }
 
     // Read from stdin for proper hook mode
@@ -661,11 +755,6 @@ async function main() {
             if (hookEvent === 'SessionStart') {
                 log('SessionStart event, ensuring monitor...');
                 await ensureMonitorRunning();
-
-                // 获取 git branch
-                if (input.cwd) {
-                    status.branch = await getGitBranch(input.cwd);
-                }
             }
 
             if (input.session_id) {
@@ -674,6 +763,21 @@ async function main() {
             if (input.cwd) {
                 const parts = input.cwd.replace(/\\/g, '/').split('/');
                 status.project = parts[parts.length - 1] || input.cwd;
+            }
+
+            // 根据工具调用中的文件路径更新项目名
+            const toolInput = input.tool_input || {};
+            const filePath = toolInput.file_path || toolInput.path || toolInput.dest;
+            if (filePath && input.session_id) {
+                const activeProject = updateProjectStats(input.session_id, filePath, input.cwd);
+                if (activeProject) {
+                    status.project = activeProject;
+                }
+                // 根据文件路径获取分支
+                status.branch = await getGitBranch(filePath);
+            } else if (input.cwd) {
+                // 没有文件路径时用 cwd
+                status.branch = await getGitBranch(input.cwd);
             }
 
             // 在会话开始时获取窗口句柄
@@ -785,42 +889,30 @@ async function main() {
             }
 
             if (needCaptureWindow) {
-                log('Capturing window handle by PID...');
+                let windowHandle = null;
 
-                // 尝试获取 Claude Code 进程 PID
-                // Claude Code 可能通过环境变量或进程树获取
-                const claudePid = process.env.CLAUDE_PID || null;
+                // 尝试获取控制台窗口句柄
+                log('Getting console window handle...');
+                windowHandle = getConsoleWindowHandle();
+                if (windowHandle) {
+                    log('Got console window handle: ' + windowHandle);
+                }
 
-                // 如果没有 CLAUDE_PID，尝试从 parent process 获取
-                // 注意：hook.js 是被 Claude Code 调用的，所以 parent 可能是 Claude Code
-                let targetPid = claudePid;
-                if (!targetPid) {
-                    try {
-                        // 获取当前进程的父进程 PID
-                        const parentPidResult = execSync(
-                            'powershell -Command "(Get-Process -Id ' + process.pid + ').Parent.ProcessId"',
-                            { encoding: 'utf8', timeout: 2000 }
-                        );
-                        targetPid = parseInt(parentPidResult.trim());
-                        log('Parent PID: ' + targetPid);
-                    } catch (e) {
-                        log('Failed to get parent PID: ' + e.message);
+                // 如果控制台窗口获取失败，尝试进程树查找
+                if (!windowHandle) {
+                    log('Console window not found, trying PID tree...');
+                    const targetPid = process.pid;
+                    windowHandle = getWindowHandleByPid(targetPid);
+                    if (windowHandle) {
+                        log('Got window via PID: ' + windowHandle);
                     }
                 }
 
-                // 通过 PID 获取窗口句柄
-                if (targetPid) {
-                    const windowHandle = getWindowHandleByPid(targetPid);
-                    if (windowHandle) {
-                        status.windowHandle = windowHandle;
-                        log('Captured window handle: ' + windowHandle + ' for session: ' + input.session_id);
-                    } else {
-                        status.windowHandle = null;
-                        log('No window handle captured (PID=' + targetPid + ') for session: ' + input.session_id);
-                    }
+                if (windowHandle) {
+                    status.windowHandle = windowHandle;
                 } else {
                     status.windowHandle = null;
-                    log('No PID available for window capture');
+                    log('No window handle captured');
                 }
             } else if (hookEvent === 'SessionStart') {
                 log('SessionStart with source=' + sessionSource + ', keeping existing window handle');

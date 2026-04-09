@@ -1,0 +1,337 @@
+<h2>像素小怪物 - 细化方案</h2>
+<p class="subtitle">14x12 像素网格 | 状态表情变化 | 动画细节</p>
+
+<div class="mockup">
+  <div class="mockup-header">基础造型：Claude 像素小怪物</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:24px;">
+    <p style="color:#888;font-size:12px;margin-bottom:16px;">尺寸：14px宽 × 12px高 | 网格：4px单元 × 3行4列</p>
+
+    <div style="display:flex;gap:24px;flex-direction:column;">
+      <!-- Idle: 睡眠状态 -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#1a1a1a;border-left:3px solid #5a5a5a;">
+        <div style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;">
+          <!-- Row 1: 天线/耳朵 -->
+          <div style="background:#3a3a3a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#3a3a3a;"></div>
+          <!-- Row 2: 眼睛(闭眼) -->
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <!-- Row 3: 嘴巴(平) -->
+          <div style="background:transparent;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:#5a5a5a;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#7a7a7a;font-family:monospace;font-size:13px;">Idle</span>
+          <span style="color:#555;font-size:10px;margin-left:8px;">闭眼 + 平嘴 = 等待中</span>
+        </div>
+      </div>
+
+      <!-- Waiting: 焦虑等待 -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#1a1a1a;border-left:3px solid #c4a35a;">
+        <div style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;">
+          <!-- Row 1: 天线抖动 -->
+          <div style="background:#8a7a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#8a7a4a;"></div>
+          <!-- Row 2: 眼睛(睁大) -->
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#c4a35a;"></div>
+          <!-- Row 3: 嘴巴(张嘴焦虑) -->
+          <div style="background:transparent;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#c4a35a;font-family:monospace;font-size:13px;">Waiting</span>
+          <span style="color:#555;font-size:10px;margin-left:8px;">睁大眼 + 张嘴 = 等待用户输入</span>
+        </div>
+      </div>
+
+      <!-- Thinking: 思考中 -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#1a1a1a;border-left:3px solid #d4a574;">
+        <div style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;">
+          <!-- Row 1: 天线 -->
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <!-- Row 2: 眼睛(闪烁) -->
+          <div style="background:#d4a574;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <!-- Row 3: 嘴巴(平) -->
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#d4a574;font-family:monospace;font-size:13px;">Thinking</span>
+          <span style="color:#555;font-size:10px;margin-left:8px;">睁眼 + 平嘴 = AI思考中</span>
+        </div>
+      </div>
+
+      <!-- Working: 工作中 -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#1a1a1a;border-left:3px solid #b8956a;">
+        <div style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;">
+          <!-- Row 1: 天线 -->
+          <div style="background:#7a6040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#7a6040;"></div>
+          <!-- Row 2: 眼睛 -->
+          <div style="background:#b8956a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#b8956a;"></div>
+          <!-- Row 3: 嘴巴(张嘴工作) -->
+          <div style="background:transparent;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#b8956a;font-family:monospace;font-size:13px;">Working</span>
+          <span style="color:#555;font-size:10px;margin-left:8px;">睁眼 + 张嘴 = 执行任务</span>
+        </div>
+      </div>
+
+      <!-- Complete: 完成 -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#1a1a1a;border-left:3px solid #5a9a6a;">
+        <div style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;">
+          <!-- Row 1: 天线 -->
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <!-- Row 2: 眼睛(开心眯眼) -->
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <!-- Row 3: 嘴巴(微笑) -->
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#5a9a6a;font-family:monospace;font-size:13px;">Complete ✓</span>
+          <span style="color:#555;font-size:10px;margin-left:8px;">眯眼(^^) + 微笑 = 任务完成</span>
+        </div>
+      </div>
+
+      <!-- Error: 错误 -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#1a1a1a;border-left:3px solid #8a4a4a;">
+        <div style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;">
+          <!-- Row 1: 天线 -->
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <!-- Row 2: 眼睛(X眼) -->
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#5a2a2a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <!-- Row 3: 嘴巴(皱眉) -->
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:#8a4a4a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#8a4a4a;"></div>
+        </div>
+        <div style="flex:1;">
+          <span style="color:#8a4a4a;font-family:monospace;font-size:13px;">Error ✗</span>
+          <span style="color:#555;font-size:10px;margin-left:8px;">X眼 + 皱眉 = 出错了</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:16px;">
+  <div class="mockup-header">动画效果演示</div>
+  <div class="mockup-body" style="background:#0d0d0d;padding:20px;">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <!-- Thinking 动画 -->
+      <div style="text-align:center;">
+        <div id="anim-thinking" style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;margin-bottom:8px;">
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#a08060;"></div>
+          <div style="background:#d4a574;"></div>
+          <div id="t-eye1" style="background:#fff;"></div>
+          <div id="t-eye2" style="background:#fff;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:#d4a574;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <span style="color:#d4a574;font-size:10px;">眼睛闪烁</span>
+      </div>
+
+      <!-- Waiting 动画 -->
+      <div style="text-align:center;">
+        <div id="anim-waiting" style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;margin-bottom:8px;">
+          <div id="w-ant1" style="background:#8a7a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div id="w-ant2" style="background:#8a7a4a;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#c4a35a;"></div>
+          <div style="background:transparent;"></div>
+          <div id="w-mouth1" style="background:#c4a35a;"></div>
+          <div id="w-mouth2" style="background:#c4a35a;"></div>
+          <div id="w-mouth3" style="background:#c4a35a;"></div>
+        </div>
+        <span style="color:#c4a35a;font-size:10px;">天线抖动+嘴巴呼吸</span>
+      </div>
+
+      <!-- Working 动画 -->
+      <div style="text-align:center;">
+        <div id="anim-working" style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;margin-bottom:8px;">
+          <div style="background:#7a6040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#7a6040;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#fff;"></div>
+          <div style="background:#b8956a;"></div>
+          <div style="background:transparent;"></div>
+          <div id="wk-mouth1" style="background:#b8956a;"></div>
+          <div id="wk-mouth2" style="background:#b8956a;"></div>
+          <div id="wk-mouth3" style="background:#b8956a;"></div>
+        </div>
+        <span style="color:#b8956a;font-size:10px;">嘴巴呼吸动画</span>
+      </div>
+
+      <!-- Complete 闪烁 -->
+      <div style="text-align:center;">
+        <div id="anim-complete" style="width:14px;height:12px;display:grid;grid-template-columns:repeat(4,4px);grid-template-rows:repeat(3,4px);gap:0;margin-bottom:8px;">
+          <div id="c-ant1" style="background:#3a704a;"></div>
+          <div id="c-body" style="background:#5a9a6a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div id="c-ant2" style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#3a704a;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:transparent;"></div>
+          <div style="background:#5a9a6a;"></div>
+          <div style="background:transparent;"></div>
+        </div>
+        <span style="color:#5a9a6a;font-size:10px;">整体闪烁庆祝</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+  <h3>像素坐标映射表</h3>
+  <div style="background:#111;padding:12px;font-family:monospace;font-size:10px;color:#888;border:1px solid #333;">
+    <pre style="margin:0;line-height:1.4;">
+状态      | Row1(天线)     | Row2(眼睛)     | Row3(嘴巴)
+----------|----------------|----------------|----------------
+Idle      | 暗-亮-亮-暗    | 亮-亮-亮-亮    | 空-亮-亮-空 (闭眼平嘴)
+Waiting   | 抖动动画       | 亮-白-白-亮    | 空-亮-亮-亮 (张嘴)
+Thinking  | 暗-亮-亮-暗    | 亮-白→亮-白→亮 | 空-亮-亮-空 (眼睛闪烁)
+Working   | 暗-亮-亮-暗    | 亮-白-白-亮    | 空-亮↔空-亮↔空 (嘴巴呼吸)
+Complete  | 暗-亮-亮-暗    | 亮-暗-暗-亮    | 空-空-亮-空 (眯眼微笑)
+Error     | 暗-亮-亮-暗    | 亮-暗-暗-亮    | 亮-亮-空-亮 (X眼皱眉)
+    </pre>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-d" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>确认方案 D</h3>
+      <p>像素小怪物：14x12网格，状态表情变化，动画细节已确定</p>
+    </div>
+  </div>
+  <div class="option" data-choice="adjust-size" onclick="toggleSelect(this)">
+    <div class="letter">S</div>
+    <div class="content">
+      <h3>调整尺寸</h3>
+      <p>更大(16x14)或更小(10x8)，修改像素单元大小</p>
+    </div>
+  </div>
+  <div class="option" data-choice="adjust-anim" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>调整动画</h3>
+      <p>修改动画频率、效果类型（闪烁/呼吸/抖动）</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let tick = 0;
+setInterval(() => {
+  tick++;
+
+  // Thinking: 眼睛闪烁 (白 <-> 亮)
+  const tEye1 = document.getElementById('t-eye1');
+  const tEye2 = document.getElementById('t-eye2');
+  if (tEye1 && tEye2) {
+    const white = tick % 2 === 0;
+    tEye1.style.background = white ? '#fff' : '#d4a574';
+    tEye2.style.background = white ? '#fff' : '#d4a574';
+  }
+
+  // Waiting: 天线抖动 + 嘴巴呼吸
+  const wAnt1 = document.getElementById('w-ant1');
+  const wAnt2 = document.getElementById('w-ant2');
+  const wM1 = document.getElementById('w-mouth1');
+  const wM2 = document.getElementById('w-mouth2');
+  const wM3 = document.getElementById('w-mouth3');
+  if (wAnt1 && wM1) {
+    const phase = tick % 4;
+    // 天线左右抖动
+    wAnt1.style.background = phase < 2 ? '#c4a35a' : '#8a7a4a';
+    wAnt2.style.background = phase >= 2 ? '#c4a35a' : '#8a7a4a';
+    // 嘴巴呼吸 (张开/收缩)
+    wM1.style.background = phase === 0 ? 'transparent' : '#c4a35a';
+    wM3.style.background = phase === 2 ? 'transparent' : '#c4a35a';
+  }
+
+  // Working: 嘴巴呼吸
+  const wkM1 = document.getElementById('wk-mouth1');
+  const wkM2 = document.getElementById('wk-mouth2');
+  const wkM3 = document.getElementById('wk-mouth3');
+  if (wkM1) {
+    const phase = tick % 3;
+    wkM1.style.background = phase === 0 ? 'transparent' : '#b8956a';
+    wkM3.style.background = phase === 2 ? 'transparent' : '#b8956a';
+  }
+
+  // Complete: 整体闪烁
+  const cAnt1 = document.getElementById('c-ant1');
+  const cBody = document.getElementById('c-body');
+  const cAnt2 = document.getElementById('c-ant2');
+  if (cBody) {
+    const bright = tick % 2 === 0;
+    cAnt1.style.background = bright ? '#5a9a6a' : '#3a704a';
+    cBody.style.background = bright ? '#7ab88a' : '#5a9a6a';
+    cAnt2.style.background = bright ? '#5a9a6a' : '#3a704a';
+  }
+}, 300);
+</script>

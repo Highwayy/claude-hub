@@ -1,0 +1,82 @@
+<h2>Context Progress Bar Design</h2>
+<p class="subtitle">Choose the progress bar style for context usage display</p>
+
+<div class="mockup">
+  <div class="mockup-header">Progress Bar Styles (10px height)</div>
+  <div class="mockup-body" style="background:#1a1a2e;padding:20px;">
+
+    <!-- Current simple progress -->
+    <div style="margin-bottom:20px;">
+      <p style="color:#888;font-size:12px;margin-bottom:5px;">Current (3px, 单色渐变)</p>
+      <div style="background:rgba(255,255,255,0.1);height:3px;border-radius:2px;overflow:hidden;">
+        <div style="background:linear-gradient(90deg,#667eea,#764ba2);height:100%;width:65%;"></div>
+      </div>
+      <p style="color:#667eea;font-size:10px;margin-top:3px;">glm-5 | 18.6k ctx</p>
+    </div>
+
+    <!-- Option 1: Color-coded segments -->
+    <div style="margin-bottom:20px;">
+      <p style="color:#888;font-size:12px;margin-bottom:5px;">Option 1: 三段变色</p>
+      <div style="background:rgba(255,255,255,0.1);height:10px;border-radius:4px;overflow:hidden;position:relative;">
+        <div style="background:#2ecc71;height:100%;width:65%;border-radius:4px 0 0 4px;"></div>
+        <div style="position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#fff;font-size:8px;font-weight:bold;">65%</div>
+      </div>
+      <p style="color:#888;font-size:10px;margin-top:3px;">&lt;70% 绿色 | 70-90% 黄色 | &gt;90% 红色</p>
+    </div>
+
+    <!-- Option 2: Gradient with color shift -->
+    <div style="margin-bottom:20px;">
+      <p style="color:#888;font-size:12px;margin-bottom:5px;">Option 2: 渐变过渡 (65% 绿)</p>
+      <div style="background:rgba(255,255,255,0.1);height:10px;border-radius:4px;overflow:hidden;position:relative;">
+        <div style="background:linear-gradient(90deg,#2ecc71,#27ae60);height:100%;width:65%;border-radius:4px;"></div>
+        <div style="position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#fff;font-size:8px;font-weight:bold;">65%</div>
+      </div>
+      <p style="color:#888;font-size:10px;margin-top:3px;">85% 黄色示例:</p>
+      <div style="background:rgba(255,255,255,0.1);height:10px;border-radius:4px;overflow:hidden;position:relative;margin-top:5px;">
+        <div style="background:linear-gradient(90deg,#f39c12,#e67e22);height:100%;width:85%;border-radius:4px;"></div>
+        <div style="position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#fff;font-size:8px;font-weight:bold;">85%</div>
+      </div>
+      <p style="color:#888;font-size:10px;margin-top:3px;">95% 红色示例:</p>
+      <div style="background:rgba(255,255,255,0.1);height:10px;border-radius:4px;overflow:hidden;position:relative;margin-top:5px;">
+        <div style="background:linear-gradient(90deg,#e74c3c,#c0392b);height:100%;width:95%;border-radius:4px;"></div>
+        <div style="position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#fff;font-size:8px;font-weight:bold;">95%</div>
+      </div>
+    </div>
+
+    <!-- Option 3: Minimal with percentage -->
+    <div style="margin-bottom:20px;">
+      <p style="color:#888;font-size:12px;margin-bottom:5px;">Option 3: 极简 + 百分比文字</p>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="background:rgba(255,255,255,0.1);height:10px;border-radius:4px;overflow:hidden;flex:1;">
+          <div style="background:#2ecc71;height:100%;width:65%;border-radius:4px;"></div>
+        </div>
+        <span style="color:#2ecc71;font-size:11px;font-weight:bold;">65%</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>三段变色</h3>
+      <p>清晰的阈值分界，直观显示状态变化</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>渐变过渡</h3>
+      <p>平滑的视觉过渡，更现代感</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>极简 + 百分比</h3>
+      <p>文字与进度条并排，节省空间</p>
+    </div>
+  </div>
+</div>
