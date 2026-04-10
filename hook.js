@@ -13,7 +13,12 @@ const { spawn, execSync } = require('child_process');
 
 const PORT = 18989;
 const HOOK_DIR = __dirname;
-const DEBUG_FILE = path.join(process.env.APPDATA || process.env.HOME, 'claude-monitor', 'hook-debug.log');
+const DATA_DIR = process.env.APPDATA || process.env.HOME;
+const DEBUG_FILE = path.join(DATA_DIR, 'claude-monitor', 'hook-debug.log');
+const WINDOW_HANDLES_FILE = path.join(DATA_DIR, 'claude-monitor', 'window-handles.json');
+
+// 终端窗口类名常量
+const TERMINAL_WINDOW_CLASSES = ['CASCADIA_HOSTING_WINDOW_CLASS', 'ConsoleWindowClass', 'PseudoConsoleWindow'];
 
 // 项目操作统计（sessionId -> {project -> count}）
 const projectStats = {};
@@ -94,22 +99,104 @@ function getWindowHandleByPid(pid) {
     return null;
 }
 
-// 获取当前进程的控制台窗口句柄
-function getConsoleWindowHandle() {
+// 获取当前前台窗口句柄，并验证是否是终端窗口
+function getForegroundWindow() {
     try {
         if (process.platform !== 'win32') return null;
-        const scriptPath = path.join(HOOK_DIR, 'get-console-window.ps1');
+        // 使用脚本文件获取前台窗口句柄和类名
+        const scriptPath = path.join(HOOK_DIR, 'get-foreground-window.ps1');
+        if (!fs.existsSync(scriptPath)) {
+            log('get-foreground-window.ps1 not found');
+            return null;
+        }
         const result = execSync(
             'powershell -ExecutionPolicy Bypass -File "' + scriptPath + '"',
             { encoding: 'utf8', timeout: 5000 }
         );
-        const handle = result.trim();
-        if (handle && handle !== '0') {
-            log('getConsoleWindowHandle: handle=' + handle);
-            return handle;
+        const output = result.trim();
+        if (output.startsWith('Error:')) {
+            log('getForegroundWindow script error: ' + output);
+            return null;
+        }
+        const parts = output.split('|');
+        if (parts.length >= 2) {
+            const handle = parts[0];
+            const className = parts[1];
+            // 只接受终端窗口类名
+            if (TERMINAL_WINDOW_CLASSES.includes(className)) {
+                log('Foreground window is terminal: handle=' + handle + ' class=' + className);
+                return handle;
+            } else {
+                log('Foreground window is NOT terminal: handle=' + handle + ' class=' + className);
+                return null;
+            }
+        }
+        log('getForegroundWindow unexpected output: ' + output);
+    } catch (e) {
+        log('getForegroundWindow error: ' + e.message);
+    }
+    return null;
+}
+
+// 保存窗口句柄到文件（直接覆盖）
+function saveWindowHandle(sessionId, windowHandle) {
+    try {
+        const dir = path.dirname(WINDOW_HANDLES_FILE);
+        fs.mkdirSync(dir, { recursive: true });  // 直接创建，不检查存在
+
+        let handles = {};
+        if (fs.existsSync(WINDOW_HANDLES_FILE)) {
+            try {
+                handles = JSON.parse(fs.readFileSync(WINDOW_HANDLES_FILE, 'utf8'));
+            } catch { }
+        }
+
+        handles[sessionId] = {
+            handle: windowHandle,
+            time: Date.now()
+        };
+
+        // 清理超过 1 周的记录
+        const oneWeekAgo = Date.now() - 7 * 24 * 3600000;
+        for (const key in handles) {
+            if (handles[key].time < oneWeekAgo) {
+                delete handles[key];
+            }
+        }
+
+        fs.writeFileSync(WINDOW_HANDLES_FILE, JSON.stringify(handles, null, 2));
+        log('Saved window handle for session ' + sessionId + ': ' + windowHandle);
+    } catch (e) {
+        log('saveWindowHandle error: ' + e.message);
+    }
+}
+
+// 加载已保存的窗口句柄
+function loadWindowHandle(sessionId) {
+    try {
+        if (fs.existsSync(WINDOW_HANDLES_FILE)) {
+            const handles = JSON.parse(fs.readFileSync(WINDOW_HANDLES_FILE, 'utf8'));
+            if (handles[sessionId] && handles[sessionId].handle) {
+                // 检查句柄是否仍然有效，并且是终端窗口
+                const checkResult = execSync(
+                    `powershell -Command "$code='[DllImport(\\"user32.dll\\")] public static extern bool IsWindow(IntPtr hWnd); [DllImport(\\"user32.dll\\",CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd,char[] lpClassName,int nMaxCount);'; $t=Add-Type -MemberDefinition $code -Name ('CHK'+(Get-Random)) -Namespace 'Win32CHK' -PassThru; if(!$t::IsWindow([IntPtr]${handles[sessionId].handle})){Write-Output 'Invalid'}else{$chars=New-Object char[] 256; $len=$t::GetClassName([IntPtr]${handles[sessionId].handle},$chars,256); $class=-join $chars[0..($len-1)]; Write-Output $class}"`,
+                    { encoding: 'utf8', timeout: 3000 }
+                ).trim();
+                if (checkResult === 'Invalid') {
+                    log('Saved window handle ' + handles[sessionId].handle + ' is no longer valid');
+                } else {
+                    // 检查窗口类名是否是终端
+                    if (TERMINAL_WINDOW_CLASSES.includes(checkResult)) {
+                        log('Loaded valid terminal window handle for session ' + sessionId + ': ' + handles[sessionId].handle + ' class=' + checkResult);
+                        return handles[sessionId].handle;
+                    } else {
+                        log('Saved window handle ' + handles[sessionId].handle + ' is not a terminal window, class=' + checkResult);
+                    }
+                }
+            }
         }
     } catch (e) {
-        log('getConsoleWindowHandle error: ' + e.message);
+        log('loadWindowHandle error: ' + e.message);
     }
     return null;
 }
@@ -780,142 +867,51 @@ async function main() {
                 status.branch = await getGitBranch(input.cwd);
             }
 
-            // 在会话开始时获取窗口句柄
-            // startup: 新会话，尝试获取窗口信息
-            // resume: 恢复会话，保留原有句柄
-            // compact: 会话压缩，不重新捕获
-            const sessionSource = input.source || '';
-            let needCaptureWindow = false;
+            // 窗口句柄捕获优先级：
+            // 1. SessionStart (startup/resume) 时的前台窗口（优先，因为用户正在操作终端）
+            // 2. 已保存的有效终端窗口句柄（resume 时使用）
+            // 3. UserPromptSubmit 时的前台窗口（后备，可能有延迟导致窗口已切换）
+            //
+            // 注意：UserPromptSubmit 时模型可能有思考延迟，用户可能已切换窗口，
+            // 所以优先使用 SessionStart 时捕获的窗口
 
-            if (hookEvent === 'SessionStart' && sessionSource === 'startup') {
-                needCaptureWindow = true;
-                log('SessionStart with source=startup, capturing window info...');
-            } else if (hookEvent === 'SessionStart' && sessionSource === 'resume') {
-                // resume 时检查是否已有窗口句柄
-                log('SessionStart with source=resume, checking existing handle...');
-                try {
-                    const existingHandle = await new Promise((resolve) => {
-                        const req = http.request({
-                            hostname: '127.0.0.1',
-                            port: PORT,
-                            path: '/status',
-                            method: 'GET',
-                            family: 4,
-                            timeout: 2000
-                        }, (res) => {
-                            let data = '';
-                            res.on('data', chunk => data += chunk);
-                            res.on('end', () => {
-                                try {
-                                    const status = JSON.parse(data);
-                                    const session = status.sessions.find(s => s.id === input.session_id);
-                                    resolve(session ? session.windowHandle : null);
-                                } catch { resolve(null); }
-                            });
-                        });
-                        req.on('error', () => resolve(null));
-                        req.on('timeout', () => { req.destroy(); resolve(null); });
-                        req.end();
-                    });
-                    if (!existingHandle) {
-                        log('No existing handle, need to capture');
-                        needCaptureWindow = true;
+            const sessionSource = input.source || '';
+
+            // SessionStart 时的处理
+            if (hookEvent === 'SessionStart') {
+                // 首先尝试加载已保存的句柄
+                const savedHandle = loadWindowHandle(input.session_id);
+                if (savedHandle) {
+                    status.windowHandle = savedHandle;
+                    log('SessionStart: using saved terminal handle: ' + savedHandle);
+                } else if (sessionSource === 'startup' || sessionSource === 'resume') {
+                    // 没有有效保存句柄，尝试捕获当前前台窗口
+                    log('SessionStart (' + sessionSource + '): no saved handle, capturing foreground window...');
+                    const windowHandle = getForegroundWindow();
+                    if (windowHandle) {
+                        log('SessionStart: captured terminal window: ' + windowHandle);
+                        status.windowHandle = windowHandle;
+                        saveWindowHandle(input.session_id, windowHandle);
                     } else {
-                        // 检查句柄是否仍然有效
-                        try {
-                            const checkValid = execSync(
-                                `powershell -Command "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class W { [DllImport(\\"user32.dll\\")] public static extern bool IsWindow(IntPtr h); }'; [W]::IsWindow([IntPtr]::new(${existingHandle}))"`,
-                                { encoding: 'utf8', timeout: 2000 }
-                            );
-                            if (checkValid.trim() === 'True') {
-                                log('Existing handle ' + existingHandle + ' is still valid');
-                            } else {
-                                log('Existing handle ' + existingHandle + ' is invalid, will recapture');
-                                needCaptureWindow = true;
-                            }
-                        } catch (e) {
-                            log('Failed to validate handle: ' + e.message);
-                        }
+                        log('SessionStart: foreground window is not terminal, will retry at UserPromptSubmit');
+                        status.windowHandle = null;
                     }
-                } catch (e) {
-                    log('Failed to check existing handle: ' + e.message);
+                } else {
+                    log('SessionStart (' + sessionSource + '): compact/other, no handle capture');
                 }
-            } else if (hookEvent !== 'SessionStart') {
-                // 非 SessionStart 事件，检查窗口句柄是否有效
-                try {
-                    const existingHandle = await new Promise((resolve) => {
-                        const req = http.request({
-                            hostname: '127.0.0.1',
-                            port: PORT,
-                            path: '/status',
-                            method: 'GET',
-                            family: 4,
-                            timeout: 2000
-                        }, (res) => {
-                            let data = '';
-                            res.on('data', chunk => data += chunk);
-                            res.on('end', () => {
-                                try {
-                                    const status = JSON.parse(data);
-                                    const session = status.sessions.find(s => s.id === input.session_id);
-                                    resolve(session ? session.windowHandle : null);
-                                } catch { resolve(null); }
-                            });
-                        });
-                        req.on('error', () => resolve(null));
-                        req.on('timeout', () => { req.destroy(); resolve(null); });
-                        req.end();
-                    });
-                    if (!existingHandle) {
-                        log('Session has no window handle, will capture');
-                        needCaptureWindow = true;
-                    } else {
-                        // 检查句柄是否仍然有效
-                        try {
-                            const checkValid = execSync(
-                                `powershell -Command "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class W { [DllImport(\\"user32.dll\\")] public static extern bool IsWindow(IntPtr h); }'; [W]::IsWindow([IntPtr]::new(${existingHandle}))"`,
-                                { encoding: 'utf8', timeout: 2000 }
-                            );
-                            if (checkValid.trim() !== 'True') {
-                                log('Handle ' + existingHandle + ' is invalid, will recapture');
-                                needCaptureWindow = true;
-                            }
-                        } catch (e) {
-                            log('Failed to validate handle: ' + e.message);
-                            needCaptureWindow = true;
-                        }
-                    }
-                } catch (e) { }
             }
 
-            if (needCaptureWindow) {
-                let windowHandle = null;
-
-                // 尝试获取控制台窗口句柄
-                log('Getting console window handle...');
-                windowHandle = getConsoleWindowHandle();
+            // UserPromptSubmit 作为后备：只在还没有有效句柄时尝试
+            if (hookEvent === 'UserPromptSubmit' && !status.windowHandle) {
+                log('UserPromptSubmit: no window handle yet, capturing foreground window...');
+                const windowHandle = getForegroundWindow();
                 if (windowHandle) {
-                    log('Got console window handle: ' + windowHandle);
-                }
-
-                // 如果控制台窗口获取失败，尝试进程树查找
-                if (!windowHandle) {
-                    log('Console window not found, trying PID tree...');
-                    const targetPid = process.pid;
-                    windowHandle = getWindowHandleByPid(targetPid);
-                    if (windowHandle) {
-                        log('Got window via PID: ' + windowHandle);
-                    }
-                }
-
-                if (windowHandle) {
+                    log('UserPromptSubmit: captured terminal window: ' + windowHandle);
                     status.windowHandle = windowHandle;
+                    saveWindowHandle(input.session_id, windowHandle);
                 } else {
-                    status.windowHandle = null;
-                    log('No window handle captured');
+                    log('UserPromptSubmit: foreground window is not terminal, cannot capture');
                 }
-            } else if (hookEvent === 'SessionStart') {
-                log('SessionStart with source=' + sessionSource + ', keeping existing window handle');
             }
 
             await sendStatus(status);

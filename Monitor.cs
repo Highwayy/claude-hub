@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
-class ClaudeMonitor : Form
+class ClaudeHub : Form
 {
     private Panel contentPanel;
     private System.Windows.Forms.Timer timer;
@@ -140,16 +140,16 @@ class ClaudeMonitor : Form
         catch (Exception ex) { Log("StopServer cleanup error: " + ex.Message); }
     }
 
-    public ClaudeMonitor()
+    public ClaudeHub()
     {
         try
         {
-            Log("ClaudeMonitor constructor started");
+            Log("ClaudeHub constructor started");
 
             // 启动 server 子进程
             StartServer();
 
-            this.Text = "Claude Monitor";
+            this.Text = "Claude Hub";
         this.Size = new Size(320, 150);
         this.FormBorderStyle = FormBorderStyle.None;
         this.StartPosition = FormStartPosition.Manual;
@@ -586,8 +586,8 @@ class ClaudeMonitor : Form
                 ctrl.Left = 5;
                 ctrl.Width = 305;
                 ctrl.OnToggleWindow = (sc) => {
-                    Log("Toggle window: " + sc.SessionId + ", windowHandle: " + sc.WindowHandle);
-                    ToggleClaudeWindow(sc.SessionId, sc.WindowHandle);
+                    Log("Toggle window: " + sc.SessionId);
+                    ToggleClaudeWindow(sc.SessionId);
                 };
                 contentPanel.Controls.Add(ctrl);
                 sessionControls.Add(ctrl);
@@ -619,46 +619,35 @@ class ClaudeMonitor : Form
         waitingLabel.Visible = hasWaitingSession;
     }
 
-    private void ToggleClaudeWindow(string sessionId, string windowHandle)
+    private void ToggleClaudeWindow(string sessionId)
     {
-        Log("Toggle: sessionId=" + sessionId + " windowHandle=" + windowHandle);
+        Log("Toggle: sessionId=" + sessionId);
         IntPtr hwnd = IntPtr.Zero;
 
-        // 优先使用 session 保存的窗口句柄
-        if (!string.IsNullOrEmpty(windowHandle))
+        try
         {
-            try
+            string handleFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "claude-monitor", "window-handles.json");
+            if (File.Exists(handleFile))
             {
-                hwnd = new IntPtr(long.Parse(windowHandle));
-                if (!NativeMethods.IsWindow(hwnd))
+                string json = File.ReadAllText(handleFile);
+                string pattern = "\"" + System.Text.RegularExpressions.Regex.Escape(sessionId) + "\"[^}]*?\"handle\"\\s*:\\s*\"?(\\d+)";
+                var match = System.Text.RegularExpressions.Regex.Match(json, pattern);
+                if (match.Success)
                 {
-                    Log("Saved handle " + windowHandle + " is invalid");
-                    hwnd = IntPtr.Zero;
-                }
-                else
-                {
-                    // 检查窗口类型
-                    StringBuilder classBuf = new StringBuilder(256);
-                    NativeMethods.GetClassName(hwnd, classBuf, classBuf.Capacity);
-                    string className = classBuf.ToString();
-                    Log("Saved handle class: " + className);
-
-                    // 如果是控制台窗口，找到对应的 CASCADIA 窗口
-                    if (className == "ConsoleWindowClass" || className == "PseudoConsoleWindow")
-                    {
-                        IntPtr cascadioHwnd = FindCascadiaForConsole(hwnd);
-                        if (cascadioHwnd != IntPtr.Zero)
-                        {
-                            Log("Found CASCADIA window " + cascadioHwnd + " for console " + hwnd);
-                            hwnd = cascadioHwnd;
-                        }
-                    }
+                    string handleStr = match.Groups[1].Value;
+                    hwnd = new IntPtr(long.Parse(handleStr));
+                    Log("Read handle from file: " + hwnd);
                 }
             }
-            catch { hwnd = IntPtr.Zero; }
+        }
+        catch (Exception ex) { Log("Error reading handle file: " + ex.Message); }
+
+        if (hwnd != IntPtr.Zero && !NativeMethods.IsWindow(hwnd))
+        {
+            Log("Handle " + hwnd + " is invalid");
+            hwnd = IntPtr.Zero;
         }
 
-        // 如果没有有效句柄，查找终端窗口
         if (hwnd == IntPtr.Zero)
         {
             hwnd = FindTerminalWindow();
@@ -687,19 +676,8 @@ class ClaudeMonitor : Form
         }
     }
 
-    // 找到包含指定控制台窗口的 CASCADIA 窗口
-    private IntPtr FindCascadiaForConsole(IntPtr consoleHwnd)
-    {
-        // Windows Terminal 下，控制台窗口和 CASCADIA 窗口没有直接的父子关系
-        // 但我们可以尝试：
-        // 1. 检查控制台窗口的所有者
-        // 2. 或者通过进程关系找到
-        return IntPtr.Zero;
-    }
-
     // All terminal windows, indexed by order of discovery
     private List<IntPtr> allTerminalWindows = new List<IntPtr>();
-    private int lastToggleIndex = -1;
 
     private IntPtr lastFoundHandle = IntPtr.Zero;
 
@@ -978,7 +956,7 @@ class ClaudeMonitor : Form
         // 第二步：使用 Mutex 作为额外保护
         try
         {
-            appMutex = new System.Threading.Mutex(true, "ClaudeMonitor_SingleInstance_v3", out createdNew);
+            appMutex = new System.Threading.Mutex(true, "ClaudeHub_SingleInstance_v3", out createdNew);
             if (!createdNew)
             {
                 LogStatic("Main: Another instance running (Mutex), notifying show-window");
@@ -1009,7 +987,7 @@ class ClaudeMonitor : Form
 
         try
         {
-            var form = new ClaudeMonitor();
+            var form = new ClaudeHub();
             LogStatic("Main: Form created, calling Application.Run");
             Application.Run(form);
             LogStatic("Main: Application.Run ended normally");

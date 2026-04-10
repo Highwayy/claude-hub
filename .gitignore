@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+*.exe.bak
+*.exe.bak2
+*.exe.bak3
+
+# Debug files
+*.stackdump
+0
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+*.tmp
+*.temp
