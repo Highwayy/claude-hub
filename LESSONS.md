@@ -214,3 +214,67 @@ var match = Regex.Match(json, pattern);
 4. **Hook 执行有延迟**，SessionStart 时捕获比 UserPromptSubmit 更准确
 5. **常量提取到模块顶层**，避免重复定义
 6. **函数定义在模块作用域**，不要放在回调内部
+
+---
+
+## 十、窗口激活状态检测
+
+### 问题：如何准确判断窗口是否处于激活状态
+**背景**：之前的实现只检查 `IsIconic(hwnd)` 判断最小化，但无法检测：
+- 窗口是否被其他窗口遮挡
+- 窗口是否被系统隐藏（DWM cloaked）
+- 窗口是否是前台激活窗口
+
+### 解决方案：多层状态检测
+
+```csharp
+enum WindowActivationState
+{
+    Invalid,           // 窗口句柄无效
+    Minimized,         // 最小化
+    Hidden,            // 隐藏
+    Cloaked,           // 系统隐藏（DWM）
+    Foreground,        // 前台激活窗口
+    Obscured,          // 被其他窗口遮挡
+    VisibleButNotForeground  // 可见但不是前台
+}
+
+WindowActivationState GetWindowActivationState(IntPtr hwnd)
+{
+    // 1. IsWindow() - 检查句柄有效性
+    // 2. IsIconic() - 检查最小化
+    // 3. IsWindowVisible() - 检查可见性
+    // 4. DwmGetWindowAttribute(DWMWA_CLOAKED) - 检查系统隐藏
+    // 5. GetForegroundWindow() - 检查是否是前台窗口
+    // 6. Z-order 遍历检测遮挡 - GetWindow(GW_HWNDPREV)
+}
+```
+
+### 关键 Win32 API
+
+| API | 作用 |
+|-----|------|
+| `IsIconic(hwnd)` | 检查最小化状态 |
+| `IsWindowVisible(hwnd)` | 检查可见性（WS_VISIBLE） |
+| `GetForegroundWindow()` | 获取前台窗口 |
+| `GetWindow(hwnd, GW_HWNDPREV)` | 获取 Z-order 上层窗口 |
+| `GetWindowRect(hwnd)` | 获取窗口矩形区域 |
+| `DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED)` | 检查 DWM cloaked 状态 |
+
+### 遮挡检测原理
+
+```
+目标窗口 ← GetWindow(GW_HWNDPREV) → 上层窗口1 → 上层窗口2 → ...
+     ↓                                        ↓
+ GetWindowRect()                         GetWindowRect()
+     ↓                                        ↓
+ 检查矩形重叠 → 如果重叠且上层窗口可见 → 判定为被遮挡
+```
+
+### 切换行为逻辑
+
+| 当前状态 | 点击行为 |
+|----------|----------|
+| Minimized/Cloaked/Hidden/Obscured | 激活窗口（恢复并置于前台） |
+| Foreground/Visible | 最小化窗口 |
+| Invalid | 不执行操作 |
