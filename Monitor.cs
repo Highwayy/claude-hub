@@ -10,6 +10,22 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
+// 全局常量类，供所有类使用
+static class Constants
+{
+    public const string SERVER_URL = "http://localhost:18989";
+    public const string HEALTH_ENDPOINT = "/health";
+    public const string STATUS_ENDPOINT = "/monitor-status";
+    public const string HEARTBEAT_ENDPOINT = "/monitor-heartbeat";
+    public const string STARTED_ENDPOINT = "/monitor-started";
+    public const string SHOW_WINDOW_ENDPOINT = "/show-window";
+    public const string SESSIONS_ENDPOINT = "/status";
+    public const string SESSION_DELETE_ENDPOINT = "/session/";
+    public const int HEALTH_TIMEOUT = 1000;
+    public const int WAIT_TIMEOUT = 500;
+    public const int MAX_WAIT_ITERATIONS = 100;  // 10 seconds
+}
+
 class ClaudeHub : Form
 {
     // Win32 常量
@@ -54,56 +70,20 @@ class ClaudeHub : Form
 
     private void StartServer()
     {
+        // Main() 已经调用 EnsureServerRunning() 启动了 server
+        // 这里只需要检查是否运行，记录状态
         try
         {
-            // 检查服务是否已运行
-            try
-            {
-                var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/health");
-                request.Proxy = null;
-                request.Timeout = 1000;
-                using (var response = request.GetResponse()) { }
-                Log("Server already running");
-                return;  // 服务已运行，不需要启动
-            }
-            catch { }
-
-            // 启动 server.js
-            string serverPath = Path.Combine(hookDir, "server.js");
-            if (!File.Exists(serverPath))
-            {
-                Log("server.js not found at: " + serverPath);
-                return;
-            }
-
-            Log("Starting server.js...");
-            serverProcess = new Process();
-            serverProcess.StartInfo.FileName = "node";
-            serverProcess.StartInfo.Arguments = "\"" + serverPath + "\"";
-            serverProcess.StartInfo.WorkingDirectory = hookDir;
-            serverProcess.StartInfo.CreateNoWindow = true;
-            serverProcess.StartInfo.UseShellExecute = false;
-            serverProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            serverProcess.Start();
-
-            // 等待服务就绪（最多5秒）
-            for (int i = 0; i < 50; i++)
-            {
-                System.Threading.Thread.Sleep(100);
-                try
-                {
-                    var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/health");
-                    request.Proxy = null;
-                    request.Timeout = 500;
-                    using (var response = request.GetResponse()) { }
-                    Log("Server started successfully");
-                    return;
-                }
-                catch { }
-            }
-            Log("Server startup timeout");
+            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.HEALTH_ENDPOINT);
+            request.Proxy = null;
+            request.Timeout = Constants.HEALTH_TIMEOUT;
+            using (var response = request.GetResponse()) { }
+            Log("Server already running");
         }
-        catch (Exception ex) { Log("StartServer error: " + ex.Message); }
+        catch
+        {
+            Log("Server not reachable after Main() startup");
+        }
     }
 
     private void StopServer()
@@ -314,7 +294,7 @@ class ClaudeHub : Form
     {
         try
         {
-            var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/monitor-heartbeat");
+            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.HEARTBEAT_ENDPOINT);
             request.Proxy = null;
             request.Timeout = 2000;
             request.Method = "POST";
@@ -332,7 +312,7 @@ class ClaudeHub : Form
 
     private void SendStarted() {
         try {
-            var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/monitor-started");
+            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.STARTED_ENDPOINT);
             request.Proxy = null;
             request.Timeout = 2000;
             request.Method = "POST";
@@ -479,9 +459,9 @@ class ClaudeHub : Form
     {
         try
         {
-            var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/status");
+            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.SESSIONS_ENDPOINT);
             request.Proxy = null;
-            request.Timeout = 1000;
+            request.Timeout = Constants.HEALTH_TIMEOUT;
             using (var response = request.GetResponse())
             using (var stream = response.GetResponseStream())
             using (var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8))
@@ -1071,31 +1051,94 @@ class ClaudeHub : Form
     // 静态 Mutex 确保不会被 GC 回收
     private static System.Threading.Mutex appMutex = null;
 
-    static void Main()
+    // 尝试启动 server（静态方法，在 Main 中使用）
+    static bool EnsureServerRunning()
     {
-        // 全局异常处理
-        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-        Application.ThreadException += (s, e) => {
-            LogStatic("ThreadException: " + e.Exception.Message);
-        };
-        AppDomain.CurrentDomain.UnhandledException += (s, e) => {
-            LogStatic("UnhandledException: " + ((Exception)e.ExceptionObject).Message);
-        };
+        // 检查是否已运行
+        if (CheckHealth()) return true;
 
-        // 单实例检测 - 先检查服务器上注册的进程
-        bool createdNew = true;
+        string hookDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "E:\\Code\\claude-monitor";
+        string serverPath = Path.Combine(hookDir, "server.js");
+        if (!File.Exists(serverPath))
+        {
+            LogStatic("EnsureServerRunning: server.js not found at: " + serverPath);
+            return false;
+        }
 
-        // 第一步：通过服务器检查是否有 Monitor 正在运行
+        // 尝试启动 server（主方案用 cmd.exe，备用用 node）
+        if (TryStartServer("cmd.exe", "/c start /b node \"" + serverPath + "\"", hookDir) ||
+            TryStartServer("node", "\"" + serverPath + "\"", hookDir))
+        {
+            return WaitForServerReady();
+        }
+        return false;
+    }
+
+    // 检查 server 健康状态
+    static bool CheckHealth()
+    {
         try
         {
-            var statusRequest = (HttpWebRequest)WebRequest.Create("http://localhost:18989/monitor-status");
+            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.HEALTH_ENDPOINT);
+            request.Proxy = null;
+            request.Timeout = Constants.HEALTH_TIMEOUT;
+            using (var response = request.GetResponse()) { }
+            return true;
+        }
+        catch { return false; }
+    }
+
+    // 启动 server 进程
+    static bool TryStartServer(string fileName, string arguments, string workingDir)
+    {
+        try
+        {
+            var proc = new Process();
+            proc.StartInfo.FileName = fileName;
+            proc.StartInfo.Arguments = arguments;
+            proc.StartInfo.WorkingDirectory = workingDir;
+            proc.StartInfo.CreateNoWindow = true;
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            proc.Start();
+            LogStatic("Server process started: " + fileName + ", pid=" + proc.Id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            LogStatic("Failed to start with " + fileName + ": " + ex.Message);
+            return false;
+        }
+    }
+
+    // 等待 server 就绪
+    static bool WaitForServerReady()
+    {
+        for (int i = 0; i < Constants.MAX_WAIT_ITERATIONS; i++)
+        {
+            System.Threading.Thread.Sleep(100);
+            if (CheckHealth())
+            {
+                LogStatic("Server ready after " + (i * 100) + "ms");
+                return true;
+            }
+        }
+        LogStatic("Server startup timeout after " + (Constants.MAX_WAIT_ITERATIONS * 100) + "ms");
+        return false;
+    }
+
+    // 通过 Server 注册自己，如果已有其他实例则返回 false
+    static bool RegisterWithServer()
+    {
+        try
+        {
+            var statusRequest = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.STATUS_ENDPOINT);
             statusRequest.Proxy = null;
             statusRequest.Timeout = 2000;
             using (var response = statusRequest.GetResponse())
             using (var reader = new System.IO.StreamReader(response.GetResponseStream()))
             {
                 string json = reader.ReadToEnd();
-                // 简单解析 JSON
                 if (json.Contains("\"running\":true") && json.Contains("\"pid\""))
                 {
                     int pidStart = json.IndexOf("\"pid\":") + 6;
@@ -1112,19 +1155,8 @@ class ClaudeHub : Form
                                 var existingProcess = Process.GetProcessById(existingPid);
                                 if (existingProcess != null && !existingProcess.HasExited)
                                 {
-                                    LogStatic("Main: Monitor already running with pid " + existingPid + ", notifying show-window");
-                                    // 通知现有实例显示窗口
-                                    try
-                                    {
-                                        var showRequest = (HttpWebRequest)WebRequest.Create("http://localhost:18989/show-window");
-                                        showRequest.Proxy = null;
-                                        showRequest.Timeout = 1000;
-                                        showRequest.Method = "POST";
-                                        showRequest.ContentLength = 0;
-                                        using (var resp = showRequest.GetResponse()) { }
-                                    }
-                                    catch { }
-                                    return;
+                                    LogStatic("RegisterWithServer: Monitor already running with pid " + existingPid);
+                                    return false;
                                 }
                             }
                             catch { /* 进程不存在 */ }
@@ -1132,29 +1164,58 @@ class ClaudeHub : Form
                     }
                 }
             }
+            return true;  // 可以启动
         }
         catch (Exception ex)
         {
-            LogStatic("Main: Status check failed: " + ex.Message);
+            LogStatic("RegisterWithServer error: " + ex.Message);
+            return true;  // Server 可能刚启动，允许继续
+        }
+    }
+
+    static void Main()
+    {
+        // 全局异常处理
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (s, e) => {
+            LogStatic("ThreadException: " + e.Exception.Message);
+        };
+        AppDomain.CurrentDomain.UnhandledException += (s, e) => {
+            LogStatic("UnhandledException: " + ((Exception)e.ExceptionObject).Message);
+        };
+
+        // 第一步：确保 Server 运行（这是关键改进）
+        if (!EnsureServerRunning())
+        {
+            LogStatic("Main: Failed to start server, exiting");
+            return;
         }
 
-        // 第二步：使用 Mutex 作为额外保护
+        // 第二步：通过 Server 检查是否已有 Monitor 运行
+        if (!RegisterWithServer())
+        {
+            LogStatic("Main: Monitor already running, notifying show-window");
+            try
+            {
+                var showRequest = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.SHOW_WINDOW_ENDPOINT);
+                showRequest.Proxy = null;
+                showRequest.Timeout = Constants.HEALTH_TIMEOUT;
+                showRequest.Method = "POST";
+                showRequest.ContentLength = 0;
+                using (var resp = showRequest.GetResponse()) { }
+            }
+            catch { }
+            return;
+        }
+
+        // 第三步：使用 Mutex 作为本地额外保护（防止极端情况）
+        bool createdNew = true;
         try
         {
-            appMutex = new System.Threading.Mutex(true, "ClaudeHub_SingleInstance_v3", out createdNew);
+            appMutex = new System.Threading.Mutex(true, "ClaudeHub_SingleInstance_v4", out createdNew);
             if (!createdNew)
             {
-                LogStatic("Main: Another instance running (Mutex), notifying show-window");
-                try
-                {
-                    var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/show-window");
-                    request.Proxy = null;
-                    request.Timeout = 1000;
-                    request.Method = "POST";
-                    request.ContentLength = 0;
-                    using (var resp = request.GetResponse()) { }
-                }
-                catch { }
+                LogStatic("Main: Mutex indicates another instance, exiting");
                 return;
             }
         }
@@ -1163,7 +1224,7 @@ class ClaudeHub : Form
             LogStatic("Main: Mutex creation failed: " + ex.Message);
         }
 
-        LogStatic("Main: Starting new instance, createdNew=" + createdNew);
+        LogStatic("Main: Starting new instance");
 
         // 添加退出事件处理
         Application.ApplicationExit += (s, e) => {
@@ -1497,9 +1558,9 @@ class SessionControl : Panel
         {
             try
             {
-                var request = (HttpWebRequest)WebRequest.Create("http://localhost:18989/session/" + _sessionId);
+                var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.SESSION_DELETE_ENDPOINT + _sessionId);
                 request.Proxy = null;
-                request.Timeout = 1000;
+                request.Timeout = Constants.HEALTH_TIMEOUT;
                 request.Method = "DELETE";
                 using (var response = request.GetResponse()) { }
             }
