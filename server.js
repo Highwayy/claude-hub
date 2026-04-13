@@ -135,13 +135,15 @@ function getOrCreateSession(sessionId, project) {
 }
 
 // Clean old sessions (older than 30 minutes of inactivity)
+// 只依赖 lastUpdate 时间，不依赖 activeSessionIds（否则会话在 60 秒内无事件就被移除）
 setInterval(() => {
     const now = Date.now();
+    const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
     for (const id in sessions) {
-        if (!activeSessionIds.has(id) || now - sessions[id].lastUpdate > 1800000) {
-            const inactiveSeconds = Math.round((now - sessions[id].lastUpdate) / 1000);
-            const isActive = activeSessionIds.has(id);
-            console.log(`[Cleanup] Removing session ${id}: active=${isActive}, inactive=${inactiveSeconds}s, project=${sessions[id].project}`);
+        const inactiveMs = now - sessions[id].lastUpdate;
+        if (inactiveMs > INACTIVITY_TIMEOUT) {
+            const inactiveMinutes = Math.round(inactiveMs / 60000);
+            console.log(`[Cleanup] Removing session ${id}: inactive=${inactiveMinutes}min, project=${sessions[id].project}`);
             delete sessions[id];
             activeSessionIds.delete(id);
         }
