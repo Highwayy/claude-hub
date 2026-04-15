@@ -814,13 +814,9 @@ async function main() {
     // Read from stdin for proper hook mode
     let inputData = '';
 
-    // Quick timeout for cases where stdin is empty
+    // Quick timeout for cases where stdin is empty - just exit without creating unknown session
     const timeout = setTimeout(async () => {
-        await sendStatus({
-            state: 'working',
-            task: 'Processing...',
-            message: 'Processing...'
-        });
+        log('stdin timeout, exiting without status update');
         process.exit(0);
     }, 100);
 
@@ -901,37 +897,39 @@ async function main() {
                 }
             }
 
-            // UserPromptSubmit 作为后备：只在还没有有效句柄时尝试
-            if (hookEvent === 'UserPromptSubmit' && !status.windowHandle) {
-                log('UserPromptSubmit: no window handle yet, capturing foreground window...');
-                const windowHandle = getForegroundWindow();
-                if (windowHandle) {
-                    log('UserPromptSubmit: captured terminal window: ' + windowHandle);
-                    status.windowHandle = windowHandle;
-                    saveWindowHandle(input.session_id, windowHandle);
+            // UserPromptSubmit: 先检查已保存的句柄是否有效，只在无效时重新捕获
+            if (hookEvent === 'UserPromptSubmit') {
+                // 先尝试加载已保存的句柄
+                const savedHandle = loadWindowHandle(input.session_id);
+                if (savedHandle) {
+                    status.windowHandle = savedHandle;
+                    log('UserPromptSubmit: using saved terminal handle: ' + savedHandle);
                 } else {
-                    log('UserPromptSubmit: foreground window is not terminal, cannot capture');
+                    // 没有有效保存句柄，尝试捕获当前前台窗口
+                    log('UserPromptSubmit: no saved handle, capturing foreground window...');
+                    const windowHandle = getForegroundWindow();
+                    if (windowHandle) {
+                        log('UserPromptSubmit: captured terminal window: ' + windowHandle);
+                        status.windowHandle = windowHandle;
+                        saveWindowHandle(input.session_id, windowHandle);
+                    } else {
+                        log('UserPromptSubmit: foreground window is not terminal, cannot capture');
+                    }
                 }
             }
 
             await sendStatus(status);
         } catch (e) {
             log('parse error: ' + e.message);
-            await sendStatus({
-                state: 'working',
-                task: 'Processing...',
-                message: 'Processing...'
-            });
+            // Don't send status on parse error to avoid creating unknown session
         }
     });
 
     if (process.stdin.isTTY) {
         clearTimeout(timeout);
-        await sendStatus({
-            state: 'idle',
-            task: 'Ready',
-            message: 'Ready'
-        });
+        // Don't send status when stdin is TTY to avoid creating unknown session
+        log('stdin is TTY, exiting without status update');
+        process.exit(0);
     }
 }
 
