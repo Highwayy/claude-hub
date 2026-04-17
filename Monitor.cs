@@ -1314,6 +1314,7 @@ class SessionControl : Panel
 
     private string _fullTaskText = "";
     private ContextMenuStrip sessionContextMenu;  // Right-click menu for window rebind
+    private System.Windows.Forms.Timer _recaptureFeedbackTimer;  // Timer for recapture visual feedback
 
     private void Log(string msg)
     {
@@ -1645,16 +1646,23 @@ class SessionControl : Panel
                 _borderColor = Color.FromArgb(243, 156, 18);
                 this.Invalidate();
 
+                // Stop any existing feedback timer before creating new one
+                if (_recaptureFeedbackTimer != null) {
+                    _recaptureFeedbackTimer.Stop();
+                    _recaptureFeedbackTimer.Dispose();
+                }
+
                 // Stop flashing after 2 seconds
-                System.Windows.Forms.Timer feedbackTimer = new System.Windows.Forms.Timer();
-                feedbackTimer.Interval = 2000;
-                feedbackTimer.Tick += (s, e) => {
+                _recaptureFeedbackTimer = new System.Windows.Forms.Timer();
+                _recaptureFeedbackTimer.Interval = 2000;
+                _recaptureFeedbackTimer.Tick += (s, e) => {
                     _flashBorder = false;
                     this.Invalidate();
-                    feedbackTimer.Stop();
-                    feedbackTimer.Dispose();
+                    _recaptureFeedbackTimer.Stop();
+                    _recaptureFeedbackTimer.Dispose();
+                    _recaptureFeedbackTimer = null;
                 };
-                feedbackTimer.Start();
+                _recaptureFeedbackTimer.Start();
             }
             catch (Exception ex) {
                 Log("MarkSessionForRecapture error: " + ex.Message);
