@@ -201,6 +201,81 @@ function loadWindowHandle(sessionId) {
     return null;
 }
 
+// Check if session needs handle recapture
+async function needsHandleRecapture(sessionId) {
+    return new Promise((resolve) => {
+        if (!sessionId) {
+            resolve(false);
+            return;
+        }
+        const req = http.request({
+            hostname: '127.0.0.1',
+            port: PORT,
+            path: '/session/' + sessionId + '/needs-recapture',
+            method: 'GET',
+            family: 4,
+            timeout: 3000,
+            lookup: (hostname, options, callback) => {
+                callback(null, '127.0.0.1', 4);
+            }
+        }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const result = JSON.parse(data);
+                    log('needsHandleRecapture: sessionId=' + sessionId + ', result=' + result.needsHandleRecapture);
+                    resolve(result.needsHandleRecapture || false);
+                } catch (e) {
+                    log('needsHandleRecapture parse error: ' + e.message);
+                    resolve(false);
+                }
+            });
+        });
+        req.on('error', (e) => {
+            log('needsHandleRecapture error: ' + e.code);
+            resolve(false);
+        });
+        req.on('timeout', () => { req.destroy(); resolve(false); });
+        req.end();
+    });
+}
+
+// Clear recapture flag after successful capture
+async function clearHandleRecapture(sessionId) {
+    return new Promise((resolve) => {
+        if (!sessionId) {
+            resolve(false);
+            return;
+        }
+        const req = http.request({
+            hostname: '127.0.0.1',
+            port: PORT,
+            path: '/session/' + sessionId + '/clear-recapture',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            family: 4,
+            timeout: 3000,
+            lookup: (hostname, options, callback) => {
+                callback(null, '127.0.0.1', 4);
+            }
+        }, (res) => {
+            res.on('data', () => {});
+            res.on('end', () => {
+                log('clearHandleRecapture: cleared for ' + sessionId);
+                resolve(true);
+            });
+        });
+        req.on('error', (e) => {
+            log('clearHandleRecapture error: ' + e.code);
+            resolve(false);
+        });
+        req.on('timeout', () => { req.destroy(); resolve(false); });
+        req.write('{}');
+        req.end();
+    });
+}
+
 function log(msg) {
     try {
         const dir = path.dirname(DEBUG_FILE);
@@ -307,12 +382,18 @@ async function setMonitorStarting() {
 async function checkProcessExists(pid) {
     if (!pid) return false;
     try {
+        // 通过 PowerShell 执行 tasklist，避免 Git Bash 转义问题
         const result = execSync(
-            `powershell -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`,
-            { encoding: 'utf8', timeout: 2000 }
+            `powershell -Command "tasklist /FI 'PID eq ${pid}' /NH"`,
+            { encoding: 'utf8', timeout: 3000 }
         );
-        return result.trim() === String(pid);
+        // tasklist 返回格式: "Monitor.exe                 10608 Console                    1     83,912 K"
+        // 或 "INFO: No tasks are running which match the specified criteria."
+        const exists = result.includes(String(pid)) && !result.includes('No tasks') && !result.includes('INFO:');
+        log('checkProcessExists: pid=' + pid + ', exists=' + exists);
+        return exists;
     } catch (e) {
+        log('checkProcessExists error: pid=' + pid + ', error=' + e.message);
         return false;
     }
 }
@@ -337,12 +418,26 @@ async function ensureMonitorRunning() {
             return;
         }
 
-        // 如果 PID 存在且进程存活，不启动新的
+        // 优先使用 server 的 running 判断，只有当 lastAlive 过期很久才检测进程
+        if (status.running) {
+            log('Monitor running according to server heartbeat');
+            return;
+        }
+
+        // running=false，检查是否真的死亡
+        const deadTime = Date.now() - (status.lastAlive || 0);
+        if (deadTime < 15000) {
+            log('Monitor possibly alive (deadTime=' + Math.round(deadTime/1000) + 's), skipping');
+            return;
+        }
+
+        // 确认死亡后才检测进程（最后验证）
         if (status.pid) {
             const processExists = await checkProcessExists(status.pid);
             log('Process ' + status.pid + ' exists: ' + processExists);
             if (processExists) {
-                log('Monitor already running, pid=' + status.pid);
+                // 进程还在，可能是心跳丢失，不重启
+                log('Monitor process still exists, heartbeat may be lost');
                 return;
             }
             log('Monitor process dead, pid=' + status.pid);
@@ -718,6 +813,46 @@ function extractTaskFromInput(input) {
         };
     }
 
+    // Notification hook - 处理权限请求和空闲提示
+    if (hookEvent === 'Notification') {
+        const notificationType = input.type || '';
+        const notificationMessage = input.message || '';
+
+        log('Notification event: type=' + notificationType + ', message=' + notificationMessage.substring(0, 50));
+
+        if (notificationType === 'permission_prompt') {
+            // 权限请求 - 使用 waiting 状态（复用现有样式）
+            const permissionText = truncate(notificationMessage, 100);
+            return {
+                state: 'waiting',
+                task: '⚠️ 权限请求: ' + permissionText,
+                message: 'Permission required',
+                model: model,
+                context: context,
+                branch: null
+            };
+        } else if (notificationType === 'idle_prompt') {
+            // 空闲提示 - 保持当前状态或设为 idle
+            return {
+                state: 'idle',
+                task: '💤 等待输入...',
+                message: 'Idle',
+                model: model,
+                context: context,
+                branch: null
+            };
+        }
+        // 其他通知类型，默认处理
+        return {
+            state: 'idle',
+            task: notificationMessage || 'Notification',
+            message: 'Notification',
+            model: model,
+            context: context,
+            branch: null
+        };
+    }
+
     let task = '';
     let state = hookEvent === 'PreToolUse' ? 'working' : 'thinking';
 
@@ -803,11 +938,20 @@ async function main() {
         // Wait a bit for server to be ready
         await new Promise(r => setTimeout(r, 2000));
     } else {
-        // Server is running, check if Monitor is still alive
+        // Server is running, check Monitor status via server (更可靠)
+        // 不再直接检测进程，依赖 server 的心跳判断
         const monitorStatus = await getMonitorStatus();
-        if (!monitorStatus.running || !(await checkProcessExists(monitorStatus.pid))) {
-            log('Monitor not running, starting...');
-            await ensureMonitorRunning();
+        log('Monitor status from server: ' + JSON.stringify(monitorStatus));
+        // 只有当 running=false 且 lastAlive 过期超过 15 秒才认为 Monitor 真正死亡
+        if (!monitorStatus.running) {
+            const deadTime = Date.now() - (monitorStatus.lastAlive || 0);
+            log('Monitor not running, deadTime=' + Math.round(deadTime/1000) + 's');
+            if (deadTime > 15000) {
+                log('Monitor confirmed dead (>15s), starting...');
+                await ensureMonitorRunning();
+            } else {
+                log('Monitor possibly starting, skipping detection');
+            }
         }
     }
 
@@ -875,45 +1019,75 @@ async function main() {
 
             // SessionStart 时的处理
             if (hookEvent === 'SessionStart') {
-                // 首先尝试加载已保存的句柄
-                const savedHandle = loadWindowHandle(input.session_id);
-                if (savedHandle) {
-                    status.windowHandle = savedHandle;
-                    log('SessionStart: using saved terminal handle: ' + savedHandle);
-                } else if (sessionSource === 'startup' || sessionSource === 'resume') {
-                    // 没有有效保存句柄，尝试捕获当前前台窗口
-                    log('SessionStart (' + sessionSource + '): no saved handle, capturing foreground window...');
+                // 检查是否需要重新绑定
+                const needsRecapture = await needsHandleRecapture(input.session_id);
+
+                if (needsRecapture) {
+                    // 用户标记了窗口绑定错误，强制捕获当前前台窗口
+                    log('SessionStart: session marked for recapture, forcing foreground capture...');
                     const windowHandle = getForegroundWindow();
                     if (windowHandle) {
-                        log('SessionStart: captured terminal window: ' + windowHandle);
+                        log('SessionStart: captured terminal window for recapture: ' + windowHandle);
                         status.windowHandle = windowHandle;
                         saveWindowHandle(input.session_id, windowHandle);
+                        await clearHandleRecapture(input.session_id);
                     } else {
-                        log('SessionStart: foreground window is not terminal, will retry at UserPromptSubmit');
-                        status.windowHandle = null;
+                        log('SessionStart: foreground window is not terminal, keeping old handle');
+                        // 保持旧句柄，等待下次机会
+                        const savedHandle = loadWindowHandle(input.session_id);
+                        if (savedHandle) {
+                            status.windowHandle = savedHandle;
+                        }
                     }
                 } else {
-                    log('SessionStart (' + sessionSource + '): compact/other, no handle capture');
+                    // 正常流程：首先尝试加载已保存的句柄
+                    const savedHandle = loadWindowHandle(input.session_id);
+                    if (savedHandle) {
+                        status.windowHandle = savedHandle;
+                        log('SessionStart: using saved terminal handle: ' + savedHandle);
+                    } else if (sessionSource === 'startup' || sessionSource === 'resume') {
+                        // 没有有效保存句柄，尝试捕获当前前台窗口
+                        log('SessionStart (' + sessionSource + '): no saved handle, capturing foreground window...');
+                        const windowHandle = getForegroundWindow();
+                        if (windowHandle) {
+                            log('SessionStart: captured terminal window: ' + windowHandle);
+                            status.windowHandle = windowHandle;
+                            saveWindowHandle(input.session_id, windowHandle);
+                        } else {
+                            log('SessionStart: foreground window is not terminal, will retry at UserPromptSubmit');
+                            status.windowHandle = null;
+                        }
+                    } else {
+                        log('SessionStart (' + sessionSource + '): compact/other, no handle capture');
+                    }
                 }
             }
 
-            // UserPromptSubmit: 先检查已保存的句柄是否有效，只在无效时重新捕获
+            // UserPromptSubmit: 检查是否需要重新绑定
             if (hookEvent === 'UserPromptSubmit') {
-                // 先尝试加载已保存的句柄
-                const savedHandle = loadWindowHandle(input.session_id);
-                if (savedHandle) {
-                    status.windowHandle = savedHandle;
-                    log('UserPromptSubmit: using saved terminal handle: ' + savedHandle);
-                } else {
-                    // 没有有效保存句柄，尝试捕获当前前台窗口
-                    log('UserPromptSubmit: no saved handle, capturing foreground window...');
+                const needsRecapture = await needsHandleRecapture(input.session_id);
+
+                if (needsRecapture) {
+                    // 用户标记了窗口绑定错误，强制捕获当前前台窗口
+                    log('UserPromptSubmit: session marked for recapture, forcing foreground capture...');
                     const windowHandle = getForegroundWindow();
                     if (windowHandle) {
-                        log('UserPromptSubmit: captured terminal window: ' + windowHandle);
+                        log('UserPromptSubmit: captured terminal window for recapture: ' + windowHandle);
                         status.windowHandle = windowHandle;
                         saveWindowHandle(input.session_id, windowHandle);
+                        await clearHandleRecapture(input.session_id);
                     } else {
-                        log('UserPromptSubmit: foreground window is not terminal, cannot capture');
+                        log('UserPromptSubmit: foreground window is not terminal, will retry later');
+                        // 不清除标记，等待下次 SessionStart
+                    }
+                } else {
+                    // 正常流程：使用已保存的句柄
+                    const savedHandle = loadWindowHandle(input.session_id);
+                    if (savedHandle) {
+                        status.windowHandle = savedHandle;
+                        log('UserPromptSubmit: using saved terminal handle: ' + savedHandle);
+                    } else {
+                        log('UserPromptSubmit: no saved handle, keeping null');
                     }
                 }
             }
