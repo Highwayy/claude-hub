@@ -57,6 +57,10 @@ function startMonitorProcess() {
             windowsHide: true  // 隐藏窗口
         });
 
+        // 立即设置 PID，不等待 Monitor 报告
+        monitorPid = monitorProcess.pid;
+        monitorLastAlive = Date.now();
+
         monitorProcess.on('exit', (code) => {
             console.log('Monitor exited with code:', code);
             monitorProcess = null;
@@ -128,7 +132,8 @@ function getOrCreateSession(sessionId, project) {
             context: null,
             branch: null,
             windowHandle: null,
-            userMessage: null
+            userMessage: null,
+            needsHandleRecapture: false  // Flag for window rebind
         };
     }
     return sessions[sessionId];
@@ -252,6 +257,40 @@ app.delete('/session/:id', (req, res) => {
         res.json({ success: true });
     } else {
         res.json({ success: false, error: 'Session not found' });
+    }
+});
+
+// Mark session for window handle recapture
+app.post('/session/:id/recapture-handle', (req, res) => {
+    const sid = req.params.id;
+    if (sessions[sid]) {
+        sessions[sid].needsHandleRecapture = true;
+        sessions[sid].lastUpdate = Date.now();
+        res.json({ success: true, needsHandleRecapture: true });
+    } else {
+        res.json({ success: false, error: 'Session not found' });
+    }
+});
+
+// Check if session needs recapture (for hook)
+app.get('/session/:id/needs-recapture', (req, res) => {
+    const sid = req.params.id;
+    if (sessions[sid]) {
+        res.json({ needsHandleRecapture: sessions[sid].needsHandleRecapture || false });
+    } else {
+        res.json({ needsHandleRecapture: false });
+    }
+});
+
+// Clear recapture flag after successful capture
+app.post('/session/:id/clear-recapture', (req, res) => {
+    const sid = req.params.id;
+    if (sessions[sid]) {
+        sessions[sid].needsHandleRecapture = false;
+        sessions[sid].lastUpdate = Date.now();
+        res.json({ success: true });
+    } else {
+        res.json({ success: false });
     }
 });
 
