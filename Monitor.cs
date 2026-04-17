@@ -1470,6 +1470,7 @@ class SessionControl : Panel
         sessionContextMenu.BackColor = Color.FromArgb(36, 36, 56);
         sessionContextMenu.ForeColor = Color.White;
         sessionContextMenu.Font = new Font("Segoe UI", 9);
+        sessionContextMenu.ShowImageMargin = false;  // Hide icon column
 
         ToolStripMenuItem rebindWindowItem = new ToolStripMenuItem("重新绑定窗口");
         rebindWindowItem.BackColor = Color.FromArgb(36, 36, 56);
