@@ -527,14 +527,31 @@ class ClaudeHub : Form
         sessionsStart += "\"sessions\":[".Length;
         int depth = 1;
         int objStart = -1;
+        bool inString = false;  // Track if we're inside a string (FIX: was missing)
+        int braceBalance = 0;   // Track actual brace balance within sessions array
 
         for (int i = sessionsStart; i < json.Length && depth > 0; i++)
         {
-            if (json[i] == '{') { if (depth == 1) objStart = i; depth++; }
-            else if (json[i] == '}')
+            char c = json[i];
+
+            // Skip characters inside strings (except escaped quotes)
+            if (inString)
             {
-                depth--;
-                if (depth == 1 && objStart >= 0)
+                if (c == '\\' && i + 1 < json.Length) i++;  // Skip escaped char
+                else if (c == '"') inString = false;
+                continue;
+            }
+
+            if (c == '"') inString = true;
+            else if (c == '{')
+            {
+                braceBalance++;
+                if (braceBalance == 1) objStart = i;
+            }
+            else if (c == '}')
+            {
+                braceBalance--;
+                if (braceBalance == 0 && objStart >= 0)
                 {
                     string obj = json.Substring(objStart, i - objStart + 1);
                     var s = new SessionData();
@@ -548,12 +565,14 @@ class ClaudeHub : Form
                     s.branch = GetJsonString(obj, "branch");
                     s.userMessage = GetJsonString(obj, "userMessage");
                     s.lastUpdate = GetJsonLong(obj, "lastUpdate");
+                    s.needsHandleRecapture = GetJsonBool(obj, "needsHandleRecapture");
                     list.Add(s);
                     objStart = -1;
                 }
             }
-            else if (json[i] == ']') depth = 0;
+            else if (c == ']') depth = 0;
         }
+        Log("ParseSessions: parsed " + list.Count + " sessions");
         return list;
     }
 
@@ -1271,6 +1290,7 @@ class SessionData
     public string branch;
     public string userMessage;
     public long lastUpdate;
+    public bool needsHandleRecapture;  // Flag for window rebind
 }
 
 class SessionControl : Panel
@@ -1293,6 +1313,7 @@ class SessionControl : Panel
     private bool _expanded = false;
 
     private string _fullTaskText = "";
+    private ContextMenuStrip sessionContextMenu;  // Right-click menu for window rebind
 
     private void Log(string msg)
     {
@@ -1442,6 +1463,35 @@ class SessionControl : Panel
         expandBtn.MouseDown += (s, e) => { };
 
         this.Controls.AddRange(new Control[] { horse, statusLbl, projectLbl, sepLbl, branchLbl, modelLbl, ctxSepLbl, contextLbl, taskLbl, userMsgLbl, expandBtn, deleteBtn, clickLayerLbl });
+
+        // Create right-click context menu for window rebind
+        sessionContextMenu = new ContextMenuStrip();
+        sessionContextMenu.BackColor = Color.FromArgb(36, 36, 56);
+        sessionContextMenu.ForeColor = Color.White;
+        sessionContextMenu.Font = new Font("Segoe UI", 9);
+
+        ToolStripMenuItem rebindWindowItem = new ToolStripMenuItem("重新绑定窗口");
+        rebindWindowItem.BackColor = Color.FromArgb(36, 36, 56);
+        rebindWindowItem.ForeColor = Color.FromArgb(243, 156, 18);  // Orange to indicate action
+        rebindWindowItem.MouseHover += (s, e) => {
+            rebindWindowItem.BackColor = Color.FromArgb(50, 50, 70);
+        };
+        rebindWindowItem.MouseLeave += (s, e) => {
+            rebindWindowItem.BackColor = Color.FromArgb(36, 36, 56);
+        };
+        rebindWindowItem.Click += (s, e) => {
+            MarkSessionForRecapture();
+        };
+
+        sessionContextMenu.Items.Add(rebindWindowItem);
+
+        // Attach context menu to clickable controls
+        this.ContextMenuStrip = sessionContextMenu;
+        userMsgLbl.ContextMenuStrip = sessionContextMenu;
+        taskLbl.ContextMenuStrip = sessionContextMenu;
+        clickLayerLbl.ContextMenuStrip = sessionContextMenu;
+        horse.ContextMenuStrip = sessionContextMenu;
+        statusLbl.ContextMenuStrip = sessionContextMenu;
     }
 
     private void ToggleExpand()
@@ -1568,6 +1618,50 @@ class SessionControl : Panel
         }
     }
 
+    public void MarkSessionForRecapture()
+    {
+        if (!string.IsNullOrEmpty(_sessionId))
+        {
+            Log("MarkSessionForRecapture: sessionId=" + _sessionId);
+            try
+            {
+                var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + "/session/" + _sessionId + "/recapture-handle");
+                request.Proxy = null;
+                request.Timeout = Constants.HEALTH_TIMEOUT;
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                string body = "{}";
+                byte[] data = System.Text.Encoding.UTF8.GetBytes(body);
+                request.ContentLength = data.Length;
+                using (var stream = request.GetRequestStream()) {
+                    stream.Write(data, 0, data.Length);
+                }
+                using (var response = request.GetResponse()) {
+                    Log("MarkSessionForRecapture: success for " + _sessionId);
+                }
+
+                // Visual feedback: flash border orange briefly
+                _flashBorder = true;
+                _borderColor = Color.FromArgb(243, 156, 18);
+                this.Invalidate();
+
+                // Stop flashing after 2 seconds
+                System.Windows.Forms.Timer feedbackTimer = new System.Windows.Forms.Timer();
+                feedbackTimer.Interval = 2000;
+                feedbackTimer.Tick += (s, e) => {
+                    _flashBorder = false;
+                    this.Invalidate();
+                    feedbackTimer.Stop();
+                    feedbackTimer.Dispose();
+                };
+                feedbackTimer.Start();
+            }
+            catch (Exception ex) {
+                Log("MarkSessionForRecapture error: " + ex.Message);
+            }
+        }
+    }
+
     public void UpdateData(SessionData data)
     {
         _sessionId = data.id ?? "";
@@ -1583,6 +1677,13 @@ class SessionControl : Panel
 
         // 项目名
         projectLbl.Text = data.project;
+
+        // Visual indicator for pending recapture - orange project name
+        if (data.needsHandleRecapture) {
+            projectLbl.ForeColor = Color.FromArgb(243, 156, 18);  // Orange
+        } else {
+            projectLbl.ForeColor = Color.FromArgb(102, 126, 234);  // Normal blue
+        }
 
         // 分支：竖线灰色，分支名绿色
         if (!string.IsNullOrEmpty(data.branch)) {
@@ -1685,18 +1786,56 @@ class SessionControl : Panel
             }
             statusLbl.ForeColor = Color.FromArgb(243, 156, 18);
         }
-        else if (data.state == "thinking") { statusLbl.Text = "Thinking"; }
-        else if (data.state == "working") { statusLbl.Text = "Working"; }
+        else if (data.state == "thinking") {
+            statusLbl.Text = "Thinking";
+            // 从 waiting 变为 thinking 时关闭闪烁并恢复颜色
+            if (_flashBorder) {
+                _flashBorder = false;
+                this.Invalidate();
+            }
+            statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
+        }
+        else if (data.state == "working") {
+            statusLbl.Text = "Working";
+            // 从 waiting 变为 working 时关闭闪烁并恢复颜色
+            if (_flashBorder) {
+                _flashBorder = false;
+                this.Invalidate();
+            }
+            statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
+        }
         else if (data.state == "complete") {
             statusLbl.Text = "Done";
+            // 从 waiting 变为 complete 时关闭闪烁并恢复颜色
+            if (_flashBorder) {
+                _flashBorder = false;
+                this.Invalidate();
+            }
+            statusLbl.ForeColor = Color.FromArgb(46, 204, 113);  // 绿色表示完成
             // Show completion message with checkmark
             if (!string.IsNullOrEmpty(data.task)) {
                 taskLbl.Text = "✓ " + _fullTaskText;
                 taskLbl.ForeColor = Color.FromArgb(46, 204, 113);
             }
         }
-        else if (data.state == "error") { statusLbl.Text = "Error"; }
-        else { statusLbl.Text = data.state; }
+        else if (data.state == "error") {
+            statusLbl.Text = "Error";
+            // 从 waiting 变为 error 时关闭闪烁
+            if (_flashBorder) {
+                _flashBorder = false;
+                this.Invalidate();
+            }
+            statusLbl.ForeColor = Color.FromArgb(231, 76, 60);  // 红色表示错误
+        }
+        else {
+            statusLbl.Text = data.state;
+            // 未知状态也关闭闪烁
+            if (_flashBorder) {
+                _flashBorder = false;
+                this.Invalidate();
+            }
+            statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
+        }
 
         statusLbl.BringToFront();
 
