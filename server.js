@@ -142,7 +142,7 @@ function getOrCreateSession(sessionId, project) {
 // Clean old sessions (older than 60 minutes of inactivity)
 setInterval(() => {
     const now = Date.now();
-    const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 60 minutes
+    const INACTIVITY_TIMEOUT = 120 * 60 * 1000; // 120 minutes (2 hours)
     for (const id in sessions) {
         const inactiveMs = now - sessions[id].lastUpdate;
         if (inactiveMs > INACTIVITY_TIMEOUT) {

@@ -579,19 +579,24 @@ class ClaudeHub : Form
     private void UpdateSessionUI(List<SessionData> sessions)
     {
         Log("UpdateSessionUI: sessions=" + sessions.Count + ", controls=" + sessionControls.Count);
-        // Remove extra controls
-        while (sessionControls.Count > sessions.Count)
-        {
-            var ctrl = sessionControls[sessionControls.Count - 1];
-            ctrl.OnToggleWindow = null;
-            contentPanel.Controls.Remove(ctrl);
-            ctrl.Dispose();
-            sessionControls.RemoveAt(sessionControls.Count - 1);
-        }
 
-        // Add new controls if needed
+        // 使用 SuspendLayout 减少重绘，避免闪烁
+        contentPanel.SuspendLayout();
+        this.SuspendLayout();
+
         try
         {
+            // Remove extra controls
+            while (sessionControls.Count > sessions.Count)
+            {
+                var ctrl = sessionControls[sessionControls.Count - 1];
+                ctrl.OnToggleWindow = null;
+                contentPanel.Controls.Remove(ctrl);
+                ctrl.Dispose();
+                sessionControls.RemoveAt(sessionControls.Count - 1);
+            }
+
+            // Add new controls if needed
             while (sessionControls.Count < sessions.Count)
             {
                 Log("Creating SessionControl, count=" + sessionControls.Count);
@@ -606,37 +611,38 @@ class ClaudeHub : Form
                 sessionControls.Add(ctrl);
                 Log("Added SessionControl, count=" + sessionControls.Count);
             }
+
+            // Update data and calculate positions
+            int totalHeight = 0;
+            for (int i = 0; i < sessions.Count; i++)
+            {
+                sessionControls[i].UpdateData(sessions[i]);
+                sessionControls[i].Top = totalHeight;
+                totalHeight += sessionControls[i].RequiredHeight + 5; // 5px gap
+                Log("Session " + i + ": height=" + sessionControls[i].RequiredHeight + ", top=" + totalHeight);
+            }
+
+            // Adjust window height (header 24 + content + padding)
+            int windowHeight = 24 + totalHeight + 10;
+            this.Height = Math.Min(windowHeight, 500);
+            Log("Window height=" + windowHeight);
+
+            // 检测是否有 waiting 状态的会话
+            hasWaitingSession = sessions.Any(s => s.state == "waiting");
+            waitingLabel.Visible = hasWaitingSession;
+
+            // 清理已不存在的会话的 lastActivatedHandle 条目
+            var activeSessionIds = new HashSet<string>(sessions.Select(s => s.id));
+            var keysToRemove = lastActivatedHandle.Keys.Where(k => !activeSessionIds.Contains(k)).ToList();
+            foreach (var key in keysToRemove)
+            {
+                lastActivatedHandle.Remove(key);
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            Log("Error creating SessionControl: " + ex.Message + "\n" + ex.StackTrace);
-        }
-
-        // Update data and calculate positions
-        int totalHeight = 0;
-        for (int i = 0; i < sessions.Count; i++)
-        {
-            sessionControls[i].UpdateData(sessions[i]);
-            sessionControls[i].Top = totalHeight;
-            totalHeight += sessionControls[i].RequiredHeight + 5; // 5px gap
-            Log("Session " + i + ": height=" + sessionControls[i].RequiredHeight + ", top=" + totalHeight);
-        }
-
-        // Adjust window height (header 24 + content + padding)
-        int windowHeight = 24 + totalHeight + 10;
-        this.Height = Math.Min(windowHeight, 500);
-        Log("Window height=" + windowHeight);
-
-        // 检测是否有 waiting 状态的会话
-        hasWaitingSession = sessions.Any(s => s.state == "waiting");
-        waitingLabel.Visible = hasWaitingSession;
-
-        // 清理已不存在的会话的 lastActivatedHandle 条目
-        var activeSessionIds = new HashSet<string>(sessions.Select(s => s.id));
-        var keysToRemove = lastActivatedHandle.Keys.Where(k => !activeSessionIds.Contains(k)).ToList();
-        foreach (var key in keysToRemove)
-        {
-            lastActivatedHandle.Remove(key);
+            contentPanel.ResumeLayout();
+            this.ResumeLayout();
         }
     }
 
