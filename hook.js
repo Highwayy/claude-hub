@@ -99,43 +99,94 @@ function getWindowHandleByPid(pid) {
     return null;
 }
 
-// 获取当前前台窗口句柄，并验证是否是终端窗口
-function getForegroundWindow() {
-    try {
-        if (process.platform !== 'win32') return null;
+// 获取当前前台窗口句柄，并验证是否是终端窗口（异步版本）
+async function getForegroundWindow() {
+    log('getForegroundWindow: starting...');
+    return new Promise((resolve) => {
+        if (process.platform !== 'win32') {
+            log('getForegroundWindow: not win32 platform');
+            resolve(null);
+            return;
+        }
         // 使用脚本文件获取前台窗口句柄和类名
         const scriptPath = path.join(HOOK_DIR, 'get-foreground-window.ps1');
         if (!fs.existsSync(scriptPath)) {
-            log('get-foreground-window.ps1 not found');
-            return null;
+            log('getForegroundWindow: script not found');
+            resolve(null);
+            return;
         }
-        const result = execSync(
-            'powershell -ExecutionPolicy Bypass -File "' + scriptPath + '"',
-            { encoding: 'utf8', timeout: 5000 }
-        );
-        const output = result.trim();
-        if (output.startsWith('Error:')) {
-            log('getForegroundWindow script error: ' + output);
-            return null;
-        }
-        const parts = output.split('|');
-        if (parts.length >= 2) {
-            const handle = parts[0];
-            const className = parts[1];
-            // 只接受终端窗口类名
-            if (TERMINAL_WINDOW_CLASSES.includes(className)) {
-                log('Foreground window is terminal: handle=' + handle + ' class=' + className);
-                return handle;
-            } else {
-                log('Foreground window is NOT terminal: handle=' + handle + ' class=' + className);
-                return null;
+
+        log('getForegroundWindow: spawning PowerShell...');
+        const child = spawn('powershell', [
+            '-ExecutionPolicy', 'Bypass',
+            '-File', scriptPath
+        ], {
+            windowsHide: true
+        });
+
+        let stdout = '';
+        let stderr = '';
+        let timedOut = false;
+
+        child.stdout.on('data', (data) => {
+            stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        // 设置超时强制杀死进程
+        const timeoutId = setTimeout(() => {
+            timedOut = true;
+            log('getForegroundWindow: timeout, killing PowerShell...');
+            child.kill();
+        }, 3000);
+
+        child.on('close', (code) => {
+            clearTimeout(timeoutId);
+            if (timedOut) {
+                log('getForegroundWindow: PowerShell killed due to timeout');
+                resolve(null);
+                return;
             }
-        }
-        log('getForegroundWindow unexpected output: ' + output);
-    } catch (e) {
-        log('getForegroundWindow error: ' + e.message);
-    }
-    return null;
+
+            const output = stdout.trim();
+            log('getForegroundWindow: PowerShell returned: ' + output);
+
+            if (!output) {
+                log('getForegroundWindow: empty output, stderr: ' + stderr.trim());
+                resolve(null);
+                return;
+            }
+            if (output.startsWith('Error:')) {
+                log('getForegroundWindow: script error: ' + output);
+                resolve(null);
+                return;
+            }
+            const parts = output.split('|');
+            log('getForegroundWindow: parts count=' + parts.length);
+            if (parts.length >= 2) {
+                const handle = parts[0];
+                const className = parts[1];
+                // 只接受终端窗口类名
+                if (TERMINAL_WINDOW_CLASSES.includes(className)) {
+                    log('getForegroundWindow: terminal window found: handle=' + handle + ' class=' + className);
+                    resolve(handle);
+                    return;
+                }
+                log('getForegroundWindow: NOT terminal: handle=' + handle + ' class=' + className);
+            }
+            log('getForegroundWindow: unexpected output format: ' + output);
+            resolve(null);
+        });
+
+        child.on('error', (err) => {
+            clearTimeout(timeoutId);
+            log('getForegroundWindow: spawn error: ' + err.message);
+            resolve(null);
+        });
+    });
 }
 
 // 保存窗口句柄到文件（直接覆盖）
@@ -1025,7 +1076,7 @@ async function main() {
                 if (needsRecapture) {
                     // 用户标记了窗口绑定错误，强制捕获当前前台窗口
                     log('SessionStart: session marked for recapture, forcing foreground capture...');
-                    const windowHandle = getForegroundWindow();
+                    const windowHandle = await getForegroundWindow();
                     if (windowHandle) {
                         log('SessionStart: captured terminal window for recapture: ' + windowHandle);
                         status.windowHandle = windowHandle;
@@ -1045,10 +1096,13 @@ async function main() {
                     if (savedHandle) {
                         status.windowHandle = savedHandle;
                         log('SessionStart: using saved terminal handle: ' + savedHandle);
-                    } else if (sessionSource === 'startup' || sessionSource === 'resume') {
+                    } else if (sessionSource === 'startup' || sessionSource === 'resume' || sessionSource === 'clear') {
                         // 没有有效保存句柄，尝试捕获当前前台窗口
+                        // startup: 新启动
+                        // resume: 从历史恢复
+                        // clear: /clear 清除后重新开始
                         log('SessionStart (' + sessionSource + '): no saved handle, capturing foreground window...');
-                        const windowHandle = getForegroundWindow();
+                        const windowHandle = await getForegroundWindow();
                         if (windowHandle) {
                             log('SessionStart: captured terminal window: ' + windowHandle);
                             status.windowHandle = windowHandle;
@@ -1070,7 +1124,7 @@ async function main() {
                 if (needsRecapture) {
                     // 用户标记了窗口绑定错误，强制捕获当前前台窗口
                     log('UserPromptSubmit: session marked for recapture, forcing foreground capture...');
-                    const windowHandle = getForegroundWindow();
+                    const windowHandle = await getForegroundWindow();
                     if (windowHandle) {
                         log('UserPromptSubmit: captured terminal window for recapture: ' + windowHandle);
                         status.windowHandle = windowHandle;
@@ -1081,13 +1135,23 @@ async function main() {
                         // 不清除标记，等待下次 SessionStart
                     }
                 } else {
-                    // 正常流程：使用已保存的句柄
+                    // 正常流程：使用已保存的句柄，如果没有则尝试捕获
                     const savedHandle = loadWindowHandle(input.session_id);
                     if (savedHandle) {
                         status.windowHandle = savedHandle;
                         log('UserPromptSubmit: using saved terminal handle: ' + savedHandle);
                     } else {
-                        log('UserPromptSubmit: no saved handle, keeping null');
+                        // 没有保存的句柄，尝试捕获当前前台窗口
+                        // 用户正在输入，前台窗口应该是终端
+                        log('UserPromptSubmit: no saved handle, trying to capture foreground window...');
+                        const windowHandle = await getForegroundWindow();
+                        if (windowHandle) {
+                            log('UserPromptSubmit: captured terminal window: ' + windowHandle);
+                            status.windowHandle = windowHandle;
+                            saveWindowHandle(input.session_id, windowHandle);
+                        } else {
+                            log('UserPromptSubmit: foreground window is not terminal, keeping null');
+                        }
                     }
                 }
             }

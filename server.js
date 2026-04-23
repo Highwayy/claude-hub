@@ -464,6 +464,8 @@ app.post('/start-monitor', (req, res) => {
 
 const server = app.listen(PORT, () => {
     console.log(`Monitor server: http://localhost:${PORT}`);
+    // 启动时自动启动 Monitor.exe
+    startMonitorProcess();
 });
 
 // Keep-alive settings to prevent connection drops

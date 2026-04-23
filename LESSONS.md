@@ -18,16 +18,24 @@
 - 将句柄保存到文件，与 sessionId 绑定
 
 ### 问题2：UserPromptSubmit 时捕获窗口不准确
-**现象**：在 UserPromptSubmit 时捕获的窗口句柄经常不是终端窗口。
+**现象**：在 UserPromptSubmit 时捕获的窗口句柄经常不是终端窗口，或者是错误的终端标签页。
 
-**原因**：Hook 执行有延迟，用户可能在模型思考期间切换了窗口。
+**原因**：
+1. Hook 执行有延迟，用户可能在模型思考期间切换了窗口
+2. **排队消息场景**：用户输入消息时 Claude Code 正在执行，消息排队等待；用户切换窗口后，排队消息自动发送触发 UserPromptSubmit
+3. **无法区分正确终端**：Windows Terminal 所有标签页属于同一进程，窗口类名相同，无法区分"正确的终端"和"另一个终端标签页"
 
-**解决方案**：
+**解决方案**：只在 SessionStart 捕获
 ```javascript
-// 优先级：
-// 1. SessionStart 时的前台窗口（用户正在操作终端）
-// 2. 已保存的有效终端窗口句柄
-// 3. UserPromptSubmit 时作为后备（仅当没有有效句柄时）
+// 窗口句柄唯一可信来源：SessionStart
+// - SessionStart (startup)：用户刚启动会话，正在操作正确的终端
+// - SessionStart (resume)：用户切换到此会话，正在操作正确的终端
+//
+// UserPromptSubmit 完全不捕获窗口：
+// - 排队消息时用户可能切到另一个终端标签页 → 前台是终端但不是正确终端
+// - 无法区分"正确终端"和"另一个终端" → 捕获可能绑定错误窗口
+//
+// 修正机会：如果绑定错误，等待下次 SessionStart 重新捕获
 ```
 
 ---
@@ -278,3 +286,56 @@ WindowActivationState GetWindowActivationState(IntPtr hwnd)
 | Minimized/Cloaked/Hidden/Obscured | 激活窗口（恢复并置于前台） |
 | Foreground/Visible | 最小化窗口 |
 | Invalid | 不执行操作 |
+
+---
+## 十一、JSON 解析 Bug - 字符串内容影响花括号计数
+
+### 问题：会话列表只显示第一个会话
+**现象**：server 返回 3 个会话，但 Monitor 只显示 1 个。
+
+**日志**：
+```
+ParseSessions: found ']' at 1142, depth=2
+ParseSessions: total parsed=1
+```
+
+**原因**：`ParseSessions` 方法没有跟踪字符串状态，导致字符串值中的 `{` 或 `}` 字符被错误地计入花括号深度。当用户的 `userMessage` 或 `task` 字段包含这些字符时，解析器认为对象内部有嵌套结构，导致 depth 计数错误，解析提前终止。
+
+**错误代码**：
+```csharp
+for (int i = sessionsStart; i < json.Length && depth > 0; i++)
+{
+    if (json[i] == '{') { depth++; }
+    else if (json[i] == '}') { depth--; }
+    // 没有处理字符串内部的字符！
+}
+```
+
+**解决方案**：添加字符串状态跟踪：
+```csharp
+bool inString = false;
+int braceBalance = 0;
+
+for (int i = sessionsStart; i < json.Length && depth > 0; i++)
+{
+    char c = json[i];
+
+    // 跳过字符串内部的字符（除转义引号）
+    if (inString)
+    {
+        if (c == '\\' && i + 1 < json.Length) i++;
+        else if (c == '"') inString = false;
+        continue;
+    }
+
+    if (c == '"') inString = true;
+    else if (c == '{') braceBalance++;
+    else if (c == '}') braceBalance--;
+    // 只有在字符串外部才计数
+}
+```
+
+**关键经验**：
+- JSON 手动解析必须跟踪字符串状态
+- 字符串值可能包含任何字符，包括 `{` 和 `}`
+- 转义字符 `\` 需要特殊处理
