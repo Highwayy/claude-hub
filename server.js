@@ -54,7 +54,7 @@ function startMonitorProcess() {
         monitorProcess = spawn(monitorPath, [], {
             detached: false,  // 不分离，让 server 作为父进程
             stdio: 'ignore',
-            windowsHide: true  // 隐藏窗口
+            windowsHide: false  // 显示窗口
         });
 
         // 立即设置 PID，不等待 Monitor 报告
