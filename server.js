@@ -233,7 +233,8 @@ app.post('/session', (req, res) => {
     if (message !== undefined) session.message = message;
     if (windowHandle !== undefined) session.windowHandle = windowHandle;
     if (project !== undefined && project !== null) session.project = project;  // 允许动态更新项目名
-    // 只在新值非 null 时才更新，    if (model !== undefined && model !== null) session.model = model;
+    // 只在新值非 null 时才更新
+    if (model !== undefined && model !== null) session.model = model;
     if (context !== undefined && context !== null) session.context = context;
     if (branch !== undefined && branch !== null) session.branch = branch;
     // userMessage 只在有新值时才更新，保持原值不被覆盖
