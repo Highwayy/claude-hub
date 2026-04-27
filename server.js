@@ -154,6 +154,14 @@ setInterval(() => {
     }
 }, 60000);
 
+// 定期检查 Monitor 进程是否存活，自动重启
+setInterval(() => {
+    if (!monitorPid || (Date.now() - monitorLastAlive > MONITOR_TIMEOUT)) {
+        console.log('[Monitor Check] Monitor not running, restarting...');
+        startMonitorProcess();
+    }
+}, 5000); // 每5秒检查一次
+
 const app = express();
 app.use(express.json());
 

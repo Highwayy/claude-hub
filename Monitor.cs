@@ -30,6 +30,8 @@ class ClaudeHub : Form
 {
     // Win32 常量
     private const int GW_HWNDPREV = 3;
+    private const uint GA_ROOT = 2;
+    private const uint GA_ROOTOWNER = 3;
     private const int SW_MINIMIZE = 6;
     private const int SW_RESTORE = 9;
     private const int SW_SHOW = 5;
@@ -37,9 +39,16 @@ class ClaudeHub : Form
     private const int MaxWindowTraversal = 50;
     private const int MinWindowArea = 100;
 
+    // Helper for window handle validation
+    private static bool IsValidWindowHandle(IntPtr hwnd)
+    {
+        return hwnd != IntPtr.Zero && NativeMethods.IsWindow(hwnd);
+    }
+
     // 排除的系统窗口类名
     private static readonly string[] ExcludedWindowClasses = {
-        "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "Start", "Windows.UI.Core.CoreWindow"
+        "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "Start", "Windows.UI.Core.CoreWindow",
+        "IslandWindow", "PerryShadowWnd", "WindowsTerminalShadowWnd", "ApplicationFrame_DropShadow"
     };
 
     private Panel contentPanel;
@@ -745,17 +754,43 @@ class ClaudeHub : Form
         if (IsWindowCloaked(hwnd))
             return WindowActivationState.Cloaked;
 
-        // 5. 检查是否是前台窗口
-        IntPtr foreground = NativeMethods.GetForegroundWindow();
-        if (hwnd == foreground)
-            return WindowActivationState.Foreground;
-
-        // 6. 检查是否被遮挡
+        // 5. 检查是否被遮挡（先检查，因为遮挡状态优先于前台判断）
         if (IsWindowObscured(hwnd))
             return WindowActivationState.Obscured;
 
+        // 6. 检查是否是前台窗口
+        IntPtr foreground = GetComparableTopLevelWindow(NativeMethods.GetForegroundWindow());
+        IntPtr target = GetComparableTopLevelWindow(hwnd);
+        IntPtr monitorRoot = GetComparableTopLevelWindow(this.Handle);
+        Log("Foreground check: hwnd=" + hwnd + " target=" + target + " foreground=" + foreground + " monitor=" + monitorRoot);
+
+        // 如果前台窗口是 Monitor 自己，返回特殊状态
+        if (foreground == monitorRoot)
+        {
+            return WindowActivationState.ForegroundIsMonitor;  // 特殊状态
+        }
+
+        if (target != IntPtr.Zero && target == foreground)
+            return WindowActivationState.Foreground;
+
         // 7. 可见但不是前台
         return WindowActivationState.VisibleButNotForeground;
+    }
+
+    private IntPtr GetComparableTopLevelWindow(IntPtr hwnd)
+    {
+        if (!IsValidWindowHandle(hwnd))
+            return IntPtr.Zero;
+
+        IntPtr rootOwner = NativeMethods.GetAncestor(hwnd, GA_ROOTOWNER);
+        if (IsValidWindowHandle(rootOwner))
+            return rootOwner;
+
+        IntPtr root = NativeMethods.GetAncestor(hwnd, GA_ROOT);
+        if (IsValidWindowHandle(root))
+            return root;
+
+        return hwnd;
     }
 
     private void ToggleClaudeWindow(string sessionId)
@@ -769,7 +804,7 @@ class ClaudeHub : Form
             if (File.Exists(handleFile))
             {
                 string json = File.ReadAllText(handleFile);
-                string pattern = "\"" + System.Text.RegularExpressions.Regex.Escape(sessionId) + "\"[^}]*?\"handle\"\\s*:\\s*\"?(\\d+)";
+                string pattern = "\"" + System.Text.RegularExpressions.Regex.Escape(sessionId) + "\"\\s*:\\s*\\{[^}]*\"handle\"\\s*:\\s*\"?([0-9]+)";
                 var match = System.Text.RegularExpressions.Regex.Match(json, pattern);
                 if (match.Success)
                 {
@@ -796,63 +831,34 @@ class ClaudeHub : Form
         {
             try
             {
+                IntPtr normalizedHwnd = GetComparableTopLevelWindow(hwnd);
+                if (normalizedHwnd != IntPtr.Zero)
+                {
+                    hwnd = normalizedHwnd;
+                }
+
                 WindowActivationState state = GetWindowActivationState(hwnd);
                 Log("Terminal window state: " + state + " for hwnd=" + hwnd);
-
-                // 简化逻辑：检查是否是"刚激活且仍然在前台"的情况
-                // 1. 窗口最小化/隐藏 → 激活
-                // 2. 窗口被遮挡 → 激活
-                // 3. 窗口可见且是前台窗口 → 最小化（toggle）
-                // 4. 窗口可见但不是前台 → 激活（可能是 Monitor 刚变成前台）
 
                 if (state == WindowActivationState.Minimized ||
                     state == WindowActivationState.Cloaked ||
                     state == WindowActivationState.Hidden ||
-                    state == WindowActivationState.Obscured)
+                    state == WindowActivationState.Obscured ||
+                    state == WindowActivationState.VisibleButNotForeground)
                 {
-                    // 窗口不可见或被遮挡，激活
-                    Log("Terminal not visible/obscured, activating hwnd=" + hwnd);
-                    ForceForegroundWindow(hwnd);
-                    lastActivatedHandle[sessionId] = hwnd;
+                    ActivateWindow(hwnd, sessionId);
                 }
                 else if (state == WindowActivationState.Foreground)
                 {
-                    // 窗口是前台窗口，最小化
-                    Log("Terminal is foreground, minimizing hwnd=" + hwnd);
-                    NativeMethods.ShowWindow(hwnd, SW_MINIMIZE);
-                    lastActivatedHandle.Remove(sessionId);
+                    MinimizeWindow(hwnd, sessionId);
                 }
-                else // VisibleButNotForeground
+                else if (state == WindowActivationState.ForegroundIsMonitor)
                 {
-                    // 窗口可见但不是前台
-                    // 检查是否是上次激活的同一窗口
                     IntPtr lastHwnd;
                     if (lastActivatedHandle.TryGetValue(sessionId, out lastHwnd) && lastHwnd == hwnd)
-                    {
-                        // 同一个窗口，检查前台窗口是否是 Monitor 自己
-                        // 注意：GetWindowActivationState 已调用 GetForegroundWindow，但 Monitor 可能已变为前台
-                        IntPtr foregroundHwnd = NativeMethods.GetForegroundWindow();
-                        if (foregroundHwnd == this.Handle)
-                        {
-                            // Monitor 是前台，用户刚点击了 Monitor，toggle 最小化
-                            Log("Terminal visible, Monitor is foreground, minimizing hwnd=" + hwnd);
-                            NativeMethods.ShowWindow(hwnd, SW_MINIMIZE);
-                            lastActivatedHandle.Remove(sessionId);
-                        }
-                        else
-                        {
-                            // 其他窗口是前台，激活终端
-                            Log("Terminal visible but other window foreground, activating hwnd=" + hwnd);
-                            ForceForegroundWindow(hwnd);
-                        }
-                    }
+                        MinimizeWindow(hwnd, sessionId);
                     else
-                    {
-                        // 不同窗口，激活
-                        Log("Terminal visible but different from last, activating hwnd=" + hwnd);
-                        ForceForegroundWindow(hwnd);
-                        lastActivatedHandle[sessionId] = hwnd;
-                    }
+                        ActivateWindow(hwnd, sessionId);
                 }
             }
             catch (Exception ex) { Log("Toggle error: " + ex.Message); }
@@ -861,6 +867,20 @@ class ClaudeHub : Form
         {
             Log("No valid terminal window found");
         }
+    }
+
+    private void ActivateWindow(IntPtr hwnd, string sessionId)
+    {
+        Log("Activating hwnd=" + hwnd);
+        ForceForegroundWindow(hwnd);
+        lastActivatedHandle[sessionId] = hwnd;
+    }
+
+    private void MinimizeWindow(IntPtr hwnd, string sessionId)
+    {
+        Log("Minimizing hwnd=" + hwnd);
+        NativeMethods.ShowWindow(hwnd, SW_MINIMIZE);
+        lastActivatedHandle.Remove(sessionId);
     }
 
     // All terminal windows, indexed by order of discovery
@@ -2253,7 +2273,8 @@ enum WindowActivationState
     Cloaked,           // 系统隐藏（如被其他窗口完全遮挡或后台预加载）
     Foreground,        // 前台激活窗口
     Obscured,          // 被其他窗口遮挡（部分或全部）
-    VisibleButNotForeground  // 可见但不是前台（未被遮挡）
+    VisibleButNotForeground,  // 可见但不是前台（未被遮挡）
+    ForegroundIsMonitor       // 前台窗口是 Monitor 自己
 }
 
 class NativeMethods
@@ -2283,6 +2304,8 @@ class NativeMethods
     public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")]
     public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);  // GW_HWNDNEXT=2, GW_HWNDPREV=3, GW_OWNER=4
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
     [DllImport("user32.dll")]
     public static extern int GetWindowThreadProcessId(IntPtr hWnd, IntPtr ProcessId);
     [DllImport("user32.dll")]
