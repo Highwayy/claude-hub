@@ -366,8 +366,8 @@ function checkServerRunning() {
     });
 }
 
-// 带重试的服务器检测
-async function checkServerRunningWithRetry(maxRetries = 3) {
+// 带重试的服务器检测（减少重试次数，快速失败）
+async function checkServerRunningWithRetry(maxRetries = 2) {
     for (let i = 0; i < maxRetries; i++) {
         const running = await checkServerRunning();
         if (running) return true;
@@ -451,67 +451,16 @@ async function checkProcessExists(pid) {
 
 async function ensureMonitorRunning() {
     try {
-        const serverRunning = await checkServerRunningWithRetry(3);
+        const serverRunning = await checkServerRunningWithRetry(2);
         if (!serverRunning) {
-            log('Server not running after retries in ensureMonitorRunning, starting...');
+            log('Server not running, starting...');
             await startServerAndMonitor();
             return;
         }
 
-        // 获取 Monitor 状态
-        const status = await getMonitorStatus();
-        log('Monitor status: ' + JSON.stringify(status));
-
-        // 如果正在启动中，等待
-        if (status.starting) {
-            log('Monitor starting by another session, waiting...');
-            await new Promise(r => setTimeout(r, 2000));
-            return;
-        }
-
-        // 优先使用 server 的 running 判断，只有当 lastAlive 过期很久才检测进程
-        if (status.running) {
-            log('Monitor running according to server heartbeat');
-            return;
-        }
-
-        // running=false，检查是否真的死亡
-        const deadTime = Date.now() - (status.lastAlive || 0);
-        if (deadTime < 15000) {
-            log('Monitor possibly alive (deadTime=' + Math.round(deadTime/1000) + 's), skipping');
-            return;
-        }
-
-        // 确认死亡后才检测进程（最后验证）
-        if (status.pid) {
-            const processExists = await checkProcessExists(status.pid);
-            log('Process ' + status.pid + ' exists: ' + processExists);
-            if (processExists) {
-                // 进程还在，可能是心跳丢失，不重启
-                log('Monitor process still exists, heartbeat may be lost');
-                return;
-            }
-            log('Monitor process dead, pid=' + status.pid);
-        }
-
-        // 设置启动锁
-        log('Setting monitor starting lock...');
-        await setMonitorStarting();
-
-        // 启动 Monitor
-        startMonitor();
-
-        // 等待 Monitor 向 server 报告 PID（最多等待3秒）
-        log('Waiting for Monitor to register...');
-        for (let i = 0; i < 6; i++) {
-            await new Promise(r => setTimeout(r, 500));
-            const newStatus = await getMonitorStatus();
-            if (newStatus.pid && newStatus.running) {
-                log('Monitor registered with pid=' + newStatus.pid);
-                return;
-            }
-        }
-        log('Monitor registration timeout, but continuing...');
+        // Server正在运行，不再检查Monitor状态
+        // Server会自己管理Monitor进程（每5秒检查心跳）
+        log('Server running, Monitor managed by server');
     } catch (e) {
         log('ensureMonitorRunning error: ' + e.message);
     }
@@ -981,29 +930,13 @@ function extractTaskFromInput(input) {
 async function main() {
     const args = process.argv.slice(2);
 
-    // Check if server is running with retry, if not start it
-    const serverRunning = await checkServerRunningWithRetry(3);
+    // 简化启动逻辑：只检查Server，让Server管理Monitor
+    const serverRunning = await checkServerRunningWithRetry(2);
     if (!serverRunning) {
-        log('Server not running after 3 retries, starting...');
+        log('Server not running, starting...');
         await startServerAndMonitor();
-        // Wait a bit for server to be ready
-        await new Promise(r => setTimeout(r, 2000));
-    } else {
-        // Server is running, check Monitor status via server (更可靠)
-        // 不再直接检测进程，依赖 server 的心跳判断
-        const monitorStatus = await getMonitorStatus();
-        log('Monitor status from server: ' + JSON.stringify(monitorStatus));
-        // 只有当 running=false 且 lastAlive 过期超过 15 秒才认为 Monitor 真正死亡
-        if (!monitorStatus.running) {
-            const deadTime = Date.now() - (monitorStatus.lastAlive || 0);
-            log('Monitor not running, deadTime=' + Math.round(deadTime/1000) + 's');
-            if (deadTime > 15000) {
-                log('Monitor confirmed dead (>15s), starting...');
-                await ensureMonitorRunning();
-            } else {
-                log('Monitor possibly starting, skipping detection');
-            }
-        }
+        // Wait for server to be ready
+        await new Promise(r => setTimeout(r, 1000));
     }
 
     // Read from stdin for proper hook mode

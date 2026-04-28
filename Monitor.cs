@@ -18,6 +18,7 @@ static class Constants
     public const string STATUS_ENDPOINT = "/monitor-status";
     public const string HEARTBEAT_ENDPOINT = "/monitor-heartbeat";
     public const string STARTED_ENDPOINT = "/monitor-started";
+    public const string STOPPING_ENDPOINT = "/monitor-stopping";  // 新增：优雅退出通知
     public const string SHOW_WINDOW_ENDPOINT = "/show-window";
     public const string SESSIONS_ENDPOINT = "/status";
     public const string SESSION_DELETE_ENDPOINT = "/session/";
@@ -177,8 +178,8 @@ class ClaudeHub : Form
         this.FormClosing += (s, e) => {
             Log("FormClosing event, CloseReason: " + e.CloseReason);
             SaveWindowPosition();
-            // 不再杀死 server，因为 server 是父进程且可能服务其他会话
-            // StopServer();
+            // 退出前通知 Server（优雅退出）
+            NotifyStopping();
         };
         this.FormClosed += (s, e) => {
             Log("FormClosed event");
@@ -301,29 +302,25 @@ class ClaudeHub : Form
 
     private void SendHeartbeat(object sender, EventArgs e)
     {
-        try
-        {
-            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.HEARTBEAT_ENDPOINT);
-            request.Proxy = null;
-            request.Timeout = 2000;
-            request.Method = "POST";
-            request.ContentType = "application/json";
-            string body = "{\"pid\":" + Process.GetCurrentProcess().Id + "}";
-            byte[] data = Encoding.UTF8.GetBytes(body);
-            request.ContentLength = data.Length;
-            using (var stream = request.GetRequestStream()) {
-                stream.Write(data, 0, data.Length);
-            }
-            using (var response = request.GetResponse()) { }
-        }
-        catch { }
+        PostPidToServer(Constants.HEARTBEAT_ENDPOINT, 2000);
     }
 
     private void SendStarted() {
+        PostPidToServer(Constants.STARTED_ENDPOINT, 2000);
+        Log("Sent started with pid: " + Process.GetCurrentProcess().Id);
+    }
+
+    private void NotifyStopping() {
+        PostPidToServer(Constants.STOPPING_ENDPOINT, 1000);
+        Log("NotifyStopping sent for pid: " + Process.GetCurrentProcess().Id);
+    }
+
+    // Helper: POST PID to server endpoint
+    private void PostPidToServer(string endpoint, int timeoutMs) {
         try {
-            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + Constants.STARTED_ENDPOINT);
+            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + endpoint);
             request.Proxy = null;
-            request.Timeout = 2000;
+            request.Timeout = timeoutMs;
             request.Method = "POST";
             request.ContentType = "application/json";
             string body = "{\"pid\":" + Process.GetCurrentProcess().Id + "}";
@@ -333,8 +330,7 @@ class ClaudeHub : Form
                 stream.Write(data, 0, data.Length);
             }
             using (var response = request.GetResponse()) { }
-            Log("Sent started with pid: " + Process.GetCurrentProcess().Id);
-        } catch (Exception ex) { Log("SendStarted error: " + ex.Message); }
+        } catch (Exception ex) { Log("PostPidToServer error (" + endpoint + "): " + ex.Message); }
     }
 
     private void LoadWindowPosition()
@@ -1195,6 +1191,13 @@ class ClaudeHub : Form
                         int existingPid;
                         if (int.TryParse(pidStr, out existingPid))
                         {
+                            // 如果PID是自己的PID，说明Server刚启动我们，继续运行
+                            int myPid = Process.GetCurrentProcess().Id;
+                            if (existingPid == myPid)
+                            {
+                                LogStatic("RegisterWithServer: PID is my own pid " + myPid + ", continuing");
+                                return true;
+                            }
                             try
                             {
                                 var existingProcess = Process.GetProcessById(existingPid);

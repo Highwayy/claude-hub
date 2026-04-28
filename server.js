@@ -7,6 +7,7 @@ const PORT = 18989;
 const DATA_DIR = path.join(process.env.APPDATA || process.env.HOME, 'claude-monitor');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -23,14 +24,22 @@ const MAX_HISTORY = 50;
 // Monitor 进程协调
 let monitorPid = null;
 let monitorProcess = null;  // 持有 Monitor 子进程引用
-let monitorStarting = false;
+let monitorStarting = false;  // 启动锁，防止重复启动
 let monitorStartTimeout = null;
 let monitorLastAlive = 0;
-const MONITOR_TIMEOUT = 10000; // 10 seconds
-const MONITOR_START_TIMEOUT = 5000; // 5 seconds
+let monitorGracefulExit = false;  // 标记Monitor是否优雅退出
+const MONITOR_TIMEOUT = 30000; // 30 seconds（给Monitor更多时间）
+const MONITOR_START_TIMEOUT = 10000; // 10 seconds
+const MONITOR_RESTART_DELAY = 5000; // 退出后等待5秒再重启
 
 // 启动 Monitor 进程（由 server 持有）
 function startMonitorProcess() {
+    // 如果正在启动，跳过
+    if (monitorStarting) {
+        console.log('[Monitor] Already starting, skipping...');
+        return false;
+    }
+
     const monitorPath = path.join(__dirname, 'Monitor.exe');
     if (!fs.existsSync(monitorPath)) {
         console.error('Monitor.exe not found:', monitorPath);
@@ -50,6 +59,10 @@ function startMonitorProcess() {
         }
     }
 
+    // 设置启动锁
+    monitorStarting = true;
+    monitorGracefulExit = false;
+
     try {
         monitorProcess = spawn(monitorPath, [], {
             detached: false,  // 不分离，让 server 作为父进程
@@ -62,19 +75,35 @@ function startMonitorProcess() {
         monitorLastAlive = Date.now();
 
         monitorProcess.on('exit', (code) => {
-            console.log('Monitor exited with code:', code);
+            console.log('Monitor exited with code:', code, 'graceful:', monitorGracefulExit);
             monitorProcess = null;
             monitorPid = null;
+            monitorLastAlive = 0;  // 清空心跳时间，防止下一个Monitor误判
+            // 释放启动锁
+            monitorStarting = false;
+            if (monitorStartTimeout) {
+                clearTimeout(monitorStartTimeout);
+                monitorStartTimeout = null;
+            }
         });
 
         monitorProcess.on('error', (err) => {
             console.error('Monitor process error:', err.message);
+            monitorStarting = false;
         });
 
         console.log('Monitor started with pid:', monitorProcess.pid);
+
+        // 设置启动锁超时，防止死锁
+        monitorStartTimeout = setTimeout(() => {
+            monitorStarting = false;
+            monitorStartTimeout = null;
+        }, MONITOR_START_TIMEOUT);
+
         return true;
     } catch (e) {
         console.error('Failed to start Monitor:', e.message);
+        monitorStarting = false;
         return false;
     }
 }
@@ -94,6 +123,56 @@ function loadHistory() {
 function saveHistory() {
     try {
         fs.writeFileSync(HISTORY_FILE, JSON.stringify(taskHistory.slice(-MAX_HISTORY), null, 2));
+    } catch (e) { }
+}
+
+// Load sessions from file（启动时恢复）
+function loadSessions() {
+    try {
+        if (fs.existsSync(SESSIONS_FILE)) {
+            const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
+            sessions = data.sessions || {};
+            activeSessionIds = new Set(data.activeSessionIds || []);
+            console.log('Loaded', activeSessionIds.size, 'sessions from file');
+        }
+    } catch (e) {
+        console.error('Failed to load sessions:', e.message);
+        sessions = {};
+        activeSessionIds = new Set();
+    }
+}
+
+// Save sessions to file（debounced，避免频繁写入）
+let saveSessionsTimer = null;
+function saveSessions() {
+    // Debounce: 延迟500ms保存，如果期间有新更新则重置计时器
+    if (saveSessionsTimer) clearTimeout(saveSessionsTimer);
+    saveSessionsTimer = setTimeout(() => {
+        saveSessionsTimer = null;
+        try {
+            const data = {
+                sessions: sessions,
+                activeSessionIds: Array.from(activeSessionIds),
+                savedAt: Date.now()
+            };
+            fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
+        } catch (e) { }
+    }, 500);
+}
+
+// 立即保存（用于退出时）
+function saveSessionsImmediate() {
+    if (saveSessionsTimer) {
+        clearTimeout(saveSessionsTimer);
+        saveSessionsTimer = null;
+    }
+    try {
+        const data = {
+            sessions: sessions,
+            activeSessionIds: Array.from(activeSessionIds),
+            savedAt: Date.now()
+        };
+        fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
     } catch (e) { }
 }
 
@@ -117,6 +196,7 @@ function addToHistory(session) {
 
 // Load history on startup
 loadHistory();
+loadSessions();
 
 function getOrCreateSession(sessionId, project) {
     if (!sessions[sessionId]) {
@@ -155,10 +235,26 @@ setInterval(() => {
 }, 60000);
 
 // 定期检查 Monitor 进程是否存活，自动重启
+let monitorRestartTimer = null;  // 延迟重启定时器
 setInterval(() => {
-    if (!monitorPid || (Date.now() - monitorLastAlive > MONITOR_TIMEOUT)) {
-        console.log('[Monitor Check] Monitor not running, restarting...');
-        startMonitorProcess();
+    // 如果正在启动或优雅退出，跳过
+    if (monitorStarting || monitorGracefulExit) {
+        return;
+    }
+
+    const deadTime = Date.now() - monitorLastAlive;
+    if (!monitorPid || deadTime > MONITOR_TIMEOUT) {
+        // 如果已有延迟重启定时器，跳过
+        if (monitorRestartTimer) {
+            return;
+        }
+        console.log('[Monitor Check] Monitor not running (deadTime=' + Math.round(deadTime/1000) + 's), scheduling restart...');
+        monitorRestartTimer = setTimeout(() => {
+            monitorRestartTimer = null;
+            if (!monitorStarting && !monitorGracefulExit) {
+                startMonitorProcess();
+            }
+        }, MONITOR_RESTART_DELAY);
     }
 }, 5000); // 每5秒检查一次
 
@@ -248,6 +344,9 @@ app.post('/session', (req, res) => {
     // userMessage 只在有新值时才更新，保持原值不被覆盖
     if (userMessage !== undefined && userMessage !== null) session.userMessage = userMessage;
     session.lastUpdate = Date.now();
+
+    // 每次更新后保存到文件
+    saveSessions();
 
     // Add to history when task completes
     if (state === 'complete' && prevState !== 'complete') {
@@ -455,9 +554,24 @@ app.post('/monitor-started', (req, res) => {
     if (pid) monitorPid = pid;
     monitorLastAlive = Date.now();  // 立即更新心跳时间
     monitorStarting = false;
+    monitorGracefulExit = false;
     if (monitorStartTimeout) {
         clearTimeout(monitorStartTimeout);
         monitorStartTimeout = null;
+    }
+    console.log('Monitor registered with pid:', pid);
+    res.json({ success: true });
+});
+
+// Monitor 优雅退出通知（退出前调用）
+app.post('/monitor-stopping', (req, res) => {
+    const { pid } = req.body;
+    console.log('Monitor stopping notification, pid:', pid);
+    monitorGracefulExit = true;
+    // 取消任何延迟重启定时器
+    if (monitorRestartTimer) {
+        clearTimeout(monitorRestartTimer);
+        monitorRestartTimer = null;
     }
     res.json({ success: true });
 });
@@ -502,12 +616,14 @@ process.on('unhandledRejection', (reason) => {
 
 process.on('SIGINT', () => {
     saveHistory();
+    saveSessionsImmediate();
     server.close();
     process.exit();
 });
 
 process.on('SIGTERM', () => {
     saveHistory();
+    saveSessionsImmediate();
     server.close();
     process.exit();
 });
