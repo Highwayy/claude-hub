@@ -4,7 +4,8 @@
   "description": "Claude Code 状态监控 - C# 窗口 + Node.js 服务器",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test *.test.js"
   },
   "keywords": ["claude", "monitor"],
   "author": "",

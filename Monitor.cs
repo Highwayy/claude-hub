@@ -56,10 +56,12 @@ class ClaudeHub : Form
     private System.Windows.Forms.Timer timer;
     private System.Windows.Forms.Timer animationTimer;
     private System.Windows.Forms.Timer heartbeatTimer;
+    private System.Windows.Forms.Timer positionSaveTimer;
     private List<SessionControl> sessionControls = new List<SessionControl>();
     private Button pinBtn;
     private Label waitingLabel;
     private bool hasWaitingSession = false;
+    private bool suppressPositionSave = false;
     private int errorCount = 0;
     private const int MaxErrors = 5;
     private string configFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "claude-monitor", "config.json");
@@ -158,9 +160,11 @@ class ClaudeHub : Form
         this.FormBorderStyle = FormBorderStyle.None;
         this.StartPosition = FormStartPosition.Manual;
         this.TopMost = true;
-        this.BackColor = Color.FromArgb(18, 20, 28);
+        this.BackColor = Color.FromArgb(22, 22, 21);
 
+        suppressPositionSave = true;
         LoadWindowPosition();
+        suppressPositionSave = false;
 
         this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
         this.Load += (s, e) => {
@@ -175,6 +179,7 @@ class ClaudeHub : Form
             catch (Exception ex) { Log("Form Load error: " + ex.Message); }
         };
         this.Resize += (s, e) => ApplyRoundedCorners();
+        this.LocationChanged += (s, e) => ScheduleWindowPositionSave();
         this.FormClosing += (s, e) => {
             Log("FormClosing event, CloseReason: " + e.CloseReason);
             SaveWindowPosition();
@@ -188,7 +193,7 @@ class ClaudeHub : Form
         Panel header = new Panel();
         header.Dock = DockStyle.Top;
         header.Height = 24;
-        header.BackColor = Color.FromArgb(34, 38, 52);
+        header.BackColor = Color.FromArgb(31, 30, 28);
         header.Cursor = Cursors.SizeAll;
         header.MouseDown += FormMouseDown;
 
@@ -207,7 +212,7 @@ class ClaudeHub : Form
         pinBtn.Height = 24;
         pinBtn.Dock = DockStyle.Right;
         pinBtn.FlatStyle = FlatStyle.Flat;
-        pinBtn.BackColor = Color.FromArgb(42, 47, 63);
+        pinBtn.BackColor = Color.FromArgb(43, 42, 38);
         pinBtn.ForeColor = Color.FromArgb(218, 225, 236);
         pinBtn.Font = new Font("Segoe MDL2 Assets", 10f);
         pinBtn.Cursor = Cursors.Hand;
@@ -218,13 +223,13 @@ class ClaudeHub : Form
         pinTip.SetToolTip(pinBtn, "钉在顶层");
         pinBtn.Click += (s, e) => {
             this.TopMost = !this.TopMost;
-            pinBtn.BackColor = this.TopMost ? Color.FromArgb(80, 153, 106) : Color.FromArgb(42, 47, 63);
+            pinBtn.BackColor = this.TopMost ? Color.FromArgb(80, 153, 106) : Color.FromArgb(43, 42, 38);
         };
         pinBtn.MouseEnter += (s, e) => {
-            pinBtn.BackColor = Color.FromArgb(56, 63, 84);
+            pinBtn.BackColor = Color.FromArgb(55, 53, 48);
         };
         pinBtn.MouseLeave += (s, e) => {
-            pinBtn.BackColor = this.TopMost ? Color.FromArgb(80, 153, 106) : Color.FromArgb(42, 47, 63);
+            pinBtn.BackColor = this.TopMost ? Color.FromArgb(80, 153, 106) : Color.FromArgb(43, 42, 38);
         };
 
         Button closeBtn = new Button();
@@ -233,7 +238,7 @@ class ClaudeHub : Form
         closeBtn.Height = 24;
         closeBtn.Dock = DockStyle.Right;
         closeBtn.FlatStyle = FlatStyle.Flat;
-        closeBtn.BackColor = Color.FromArgb(42, 47, 63);
+        closeBtn.BackColor = Color.FromArgb(43, 42, 38);
         closeBtn.ForeColor = Color.FromArgb(218, 225, 236);
         closeBtn.Font = new Font("Segoe MDL2 Assets", 8f);
         closeBtn.Cursor = Cursors.Hand;
@@ -247,7 +252,7 @@ class ClaudeHub : Form
             closeBtn.BackColor = Color.FromArgb(231, 76, 60);
         };
         closeBtn.MouseLeave += (s, e) => {
-            closeBtn.BackColor = Color.FromArgb(42, 47, 63);
+            closeBtn.BackColor = Color.FromArgb(43, 42, 38);
         };
 
         // Waiting 提示标签（初始隐藏）
@@ -266,7 +271,7 @@ class ClaudeHub : Form
 
         contentPanel = new Panel();
         contentPanel.Dock = DockStyle.Fill;
-        contentPanel.BackColor = Color.FromArgb(18, 20, 28);
+        contentPanel.BackColor = Color.FromArgb(22, 22, 21);
         contentPanel.MouseDown += FormMouseDown;
 
         // Session 右键菜单（在 SessionControl 上显示）
@@ -285,6 +290,13 @@ class ClaudeHub : Form
         animationTimer.Interval = 250;  // Slower animation (250ms)
         animationTimer.Tick += AnimationTick;
         animationTimer.Start();
+
+        positionSaveTimer = new System.Windows.Forms.Timer();
+        positionSaveTimer.Interval = 600;
+        positionSaveTimer.Tick += (s, e) => {
+            positionSaveTimer.Stop();
+            SaveWindowPosition();
+        };
 
         // 心跳定时器，每3秒发送一次心跳（从5秒缩短）
         heartbeatTimer = new System.Windows.Forms.Timer();
@@ -436,6 +448,13 @@ class ClaudeHub : Form
         catch (Exception ex) { Log("SaveWindowPosition error: " + ex.Message); }
     }
 
+    private void ScheduleWindowPositionSave()
+    {
+        if (suppressPositionSave || positionSaveTimer == null) return;
+        positionSaveTimer.Stop();
+        positionSaveTimer.Start();
+    }
+
     private void ApplyRoundedCorners()
     {
         try
@@ -570,6 +589,8 @@ class ClaudeHub : Form
                     s.task = GetJsonString(obj, "task");
                     s.windowHandle = GetJsonString(obj, "windowHandle");
                     s.model = GetJsonString(obj, "model");
+                    s.effort = GetJsonString(obj, "effort");
+                    s.source = GetJsonString(obj, "source");
                     s.context = GetJsonString(obj, "context");
                     s.branch = GetJsonString(obj, "branch");
                     s.userMessage = GetJsonString(obj, "userMessage");
@@ -1064,8 +1085,26 @@ class ClaudeHub : Form
             return "";
         }
         start += search.Length;
-        int end = json.IndexOf("\"", start);
-        if (end < 0) return "";
+        int end = start;
+        bool escaped = false;
+        while (end < json.Length)
+        {
+            char c = json[end];
+            if (escaped)
+            {
+                escaped = false;
+            }
+            else if (c == '\\')
+            {
+                escaped = true;
+            }
+            else if (c == '"')
+            {
+                break;
+            }
+            end++;
+        }
+        if (end >= json.Length) return "";
         string value = json.Substring(start, end - start);
         return DecodeJsonString(value);
     }
@@ -1358,6 +1397,8 @@ class SessionData
 {
     public string id, project, state, task, windowHandle;
     public string model;
+    public string effort;
+    public string source;
     public string context;
     public string branch;
     public string userMessage;
@@ -1380,14 +1421,21 @@ class SessionControl : Panel
     private int _requiredHeight = 65;
     private bool _flashBorder = false;
     private bool _flashStoppedByClick = false;
+    private bool _isCodexSession = false;
     private Color _borderColor = Color.FromArgb(243, 156, 18);
     private int _animTick = 0;
     private bool _expanded = false;
     private Color _accentColor = Color.FromArgb(126, 148, 226);
+    private Color _cardBack = CardBack;
+    private Color _cardBackAlt = CardBackAlt;
     private const int CardPadding = 5;
     private const int ActionSize = 18;
-    private static readonly Color CardBack = Color.FromArgb(29, 33, 45);
-    private static readonly Color CardBackAlt = Color.FromArgb(35, 40, 54);
+    private static readonly Color CardBack = Color.FromArgb(30, 32, 38);
+    private static readonly Color CardBackAlt = Color.FromArgb(38, 41, 48);
+    private static readonly Color CodexCardBack = Color.FromArgb(30, 32, 38);
+    private static readonly Color CodexCardBackAlt = Color.FromArgb(38, 41, 48);
+    private static readonly Color ClaudeBrand = Color.FromArgb(209, 135, 79);
+    private static readonly Color CodexBrand = Color.FromArgb(116, 185, 158);
     private static readonly Color TextPrimary = Color.FromArgb(235, 238, 245);
     private static readonly Color TextMuted = Color.FromArgb(152, 161, 178);
 
@@ -1590,6 +1638,17 @@ class SessionControl : Panel
         if (taskLbl != null) UpdateLayout();
     }
 
+    private void ApplySessionPalette()
+    {
+        _cardBack = _isCodexSession ? CodexCardBack : CardBack;
+        _cardBackAlt = _isCodexSession ? CodexCardBackAlt : CardBackAlt;
+
+        if (this.BackColor != _cardBack) this.BackColor = _cardBack;
+        if (expandBtn != null && expandBtn.BackColor != _cardBackAlt) expandBtn.BackColor = _cardBackAlt;
+        if (deleteBtn != null && deleteBtn.BackColor != _cardBackAlt) deleteBtn.BackColor = _cardBackAlt;
+        if (sessionContextMenu != null && sessionContextMenu.BackColor != _cardBack) sessionContextMenu.BackColor = _cardBack;
+    }
+
     private void UpdateLayout()
     {
         // 使用 SuspendLayout 减少重绘，避免卡顿
@@ -1611,6 +1670,7 @@ class SessionControl : Panel
         statusLbl.Left = 33;
         statusLbl.Top = 17;
         modelLbl.Left = statusLbl.Right + 4;
+        modelLbl.Width = Math.Max(78, Math.Min(128, metaRight - modelLbl.Left - 58));
         ctxSepLbl.Left = modelLbl.Right + 2;
         contextLbl.Left = ctxSepLbl.Right + 2;
         contextLbl.Width = Math.Max(42, metaRight - contextLbl.Left);
@@ -1705,12 +1765,12 @@ class SessionControl : Panel
         if (flashCount % 2 == 0)
             this.BackColor = Color.FromArgb(42, 61, 49);
         else
-            this.BackColor = CardBack;
+            this.BackColor = _cardBack;
 
         if (flashCount >= 6)
         {
             flashTimer.Stop();
-            this.BackColor = CardBack;
+            this.BackColor = _cardBack;
         }
     }
 
@@ -1800,6 +1860,8 @@ class SessionControl : Panel
         _sessionId = data.id ?? "";
         _windowHandle = data.windowHandle ?? "";
         _lastUpdate = data.lastUpdate;
+        _isCodexSession = (data.source == "codex") || _sessionId.StartsWith("codex:");
+        ApplySessionPalette();
         // Debug log
         try {
             var logFile = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "claude-monitor", "monitor.log");
@@ -1811,11 +1873,10 @@ class SessionControl : Panel
         // 项目名
         projectLbl.Text = data.project;
 
-        // Visual indicator for pending recapture - orange project name
-        if (data.needsHandleRecapture) {
-            projectLbl.ForeColor = Color.FromArgb(217, 157, 82);  // Orange
+        if (_isCodexSession) {
+            projectLbl.ForeColor = CodexBrand;
         } else {
-            projectLbl.ForeColor = Color.FromArgb(126, 148, 226);  // Normal blue
+            projectLbl.ForeColor = ClaudeBrand;
         }
 
         // 分支：竖线灰色，分支名绿色
@@ -1837,7 +1898,9 @@ class SessionControl : Panel
 
         if (hasModel)
         {
-            if (modelLbl.Text != data.model) modelLbl.Text = data.model;
+            string modelText = data.model;
+            if (!string.IsNullOrEmpty(data.effort)) modelText = modelText + " " + data.effort;
+            if (modelLbl.Text != modelText) modelLbl.Text = modelText;
             if (!modelLbl.Visible) modelLbl.Visible = true;
         }
         else

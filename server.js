@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const PORT = 18989;
+const PORT = parseInt(process.env.CLAUDE_MONITOR_PORT || '18989', 10);
 const DATA_DIR = path.join(process.env.APPDATA || process.env.HOME, 'claude-monitor');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
@@ -28,9 +28,60 @@ let monitorStarting = false;  // 启动锁，防止重复启动
 let monitorStartTimeout = null;
 let monitorLastAlive = 0;
 let monitorGracefulExit = false;  // 标记Monitor是否优雅退出
+let codexWatcherProcess = null;
 const MONITOR_TIMEOUT = 30000; // 30 seconds（给Monitor更多时间）
 const MONITOR_START_TIMEOUT = 10000; // 10 seconds
 const MONITOR_RESTART_DELAY = 5000; // 退出后等待5秒再重启
+
+function startCodexWatcherProcess() {
+    if (codexWatcherProcess) {
+        try {
+            process.kill(codexWatcherProcess.pid, 0);
+            return true;
+        } catch (e) {
+            codexWatcherProcess = null;
+        }
+    }
+
+    const watcherPath = path.join(__dirname, 'codex-watcher.js');
+    if (!fs.existsSync(watcherPath)) {
+        console.error('codex-watcher.js not found:', watcherPath);
+        return false;
+    }
+
+    try {
+        codexWatcherProcess = spawn(process.execPath, [watcherPath], {
+            detached: false,
+            stdio: 'ignore',
+            windowsHide: true
+        });
+
+        codexWatcherProcess.on('exit', (code) => {
+            console.log('Codex watcher exited with code:', code);
+            codexWatcherProcess = null;
+        });
+
+        codexWatcherProcess.on('error', (err) => {
+            console.error('Codex watcher error:', err.message);
+            codexWatcherProcess = null;
+        });
+
+        console.log('Codex watcher started with pid:', codexWatcherProcess.pid);
+        return true;
+    } catch (e) {
+        console.error('Failed to start Codex watcher:', e.message);
+        codexWatcherProcess = null;
+        return false;
+    }
+}
+
+function stopCodexWatcherProcess() {
+    if (!codexWatcherProcess) return;
+    try {
+        codexWatcherProcess.kill();
+    } catch (e) {}
+    codexWatcherProcess = null;
+}
 
 // 启动 Monitor 进程（由 server 持有）
 function startMonitorProcess() {
@@ -209,6 +260,8 @@ function getOrCreateSession(sessionId, project) {
             message: '',
             lastUpdate: Date.now(),
             model: null,
+            effort: null,
+            source: null,
             context: null,
             branch: null,
             windowHandle: null,
@@ -230,6 +283,7 @@ setInterval(() => {
             console.log(`[Cleanup] Removing session ${id}: inactive=${inactiveMinutes}min, state=${sessions[id].state}, project=${sessions[id].project}`);
             delete sessions[id];
             activeSessionIds.delete(id);
+            saveSessions();
         }
     }
 }, 60000);
@@ -323,7 +377,7 @@ app.get('/status', (req, res) => {
 
 // Update single session (from hooks)
 app.post('/session', (req, res) => {
-    const { sessionId, project, state, task, progress, message, windowHandle, model, context, branch, userMessage } = req.body;
+    const { sessionId, project, state, task, progress, message, windowHandle, model, effort, source, context, branch, userMessage } = req.body;
     const sid = sessionId || 'default';
     const session = getOrCreateSession(sid, project);
 
@@ -339,8 +393,11 @@ app.post('/session', (req, res) => {
     if (project !== undefined && project !== null) session.project = project;  // 允许动态更新项目名
     // 只在新值非 null 时才更新
     if (model !== undefined && model !== null) session.model = model;
+    if (effort !== undefined && effort !== null) session.effort = effort;
+    if (source !== undefined && source !== null) session.source = source;
     if (context !== undefined && context !== null) session.context = context;
     if (branch !== undefined && branch !== null) session.branch = branch;
+    if (session.source === 'codex') session.needsHandleRecapture = false;
     // userMessage 只在有新值时才更新，保持原值不被覆盖
     if (userMessage !== undefined && userMessage !== null) session.userMessage = userMessage;
     session.lastUpdate = Date.now();
@@ -362,6 +419,7 @@ app.delete('/session/:id', (req, res) => {
     if (sessions[sid]) {
         delete sessions[sid];
         activeSessionIds.delete(sid);
+        saveSessionsImmediate();
         res.json({ success: true });
     } else {
         res.json({ success: false, error: 'Session not found' });
@@ -374,6 +432,7 @@ app.post('/session/:id/recapture-handle', (req, res) => {
     if (sessions[sid]) {
         sessions[sid].needsHandleRecapture = true;
         sessions[sid].lastUpdate = Date.now();
+        saveSessions();
         res.json({ success: true, needsHandleRecapture: true });
     } else {
         res.json({ success: false, error: 'Session not found' });
@@ -396,6 +455,7 @@ app.post('/session/:id/clear-recapture', (req, res) => {
     if (sessions[sid]) {
         sessions[sid].needsHandleRecapture = false;
         sessions[sid].lastUpdate = Date.now();
+        saveSessions();
         res.json({ success: true });
     } else {
         res.json({ success: false });
@@ -407,6 +467,7 @@ app.post('/active', (req, res) => {
     const { sessions: ids } = req.body;
     if (Array.isArray(ids)) {
         activeSessionIds = new Set(ids);
+        saveSessions();
     }
     res.json({ success: true });
 });
@@ -480,6 +541,7 @@ app.post('/config', (req, res) => {
 app.post('/reset', (req, res) => {
     sessions = {};
     activeSessionIds = new Set();
+    saveSessionsImmediate();
     res.json({ success: true });
 });
 
@@ -588,7 +650,10 @@ app.post('/start-monitor', (req, res) => {
 const server = app.listen(PORT, () => {
     console.log(`Monitor server: http://localhost:${PORT}`);
     // 启动时自动启动 Monitor.exe
-    startMonitorProcess();
+    if (process.env.CLAUDE_MONITOR_DISABLE_AUTOSTART !== '1') {
+        startMonitorProcess();
+        startCodexWatcherProcess();
+    }
 });
 
 // Keep-alive settings to prevent connection drops
@@ -617,6 +682,7 @@ process.on('unhandledRejection', (reason) => {
 process.on('SIGINT', () => {
     saveHistory();
     saveSessionsImmediate();
+    stopCodexWatcherProcess();
     server.close();
     process.exit();
 });
@@ -624,6 +690,7 @@ process.on('SIGINT', () => {
 process.on('SIGTERM', () => {
     saveHistory();
     saveSessionsImmediate();
+    stopCodexWatcherProcess();
     server.close();
     process.exit();
 });

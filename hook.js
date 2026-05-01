@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 
-const PORT = 18989;
+const PORT = parseInt(process.env.CLAUDE_MONITOR_PORT || '18989', 10);
 const HOOK_DIR = __dirname;
 const DATA_DIR = process.env.APPDATA || process.env.HOME;
 const DEBUG_FILE = path.join(DATA_DIR, 'claude-monitor', 'hook-debug.log');
@@ -349,9 +349,21 @@ function checkServerRunning() {
                 callback(null, '127.0.0.1', 4);
             }
         }, (res) => {
+            let data = '';
             log('checkServerRunning: got response ' + res.statusCode);
-            res.on('data', () => {});  // 消费响应体
-            res.on('end', () => resolve(true));
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                if (res.statusCode !== 200) {
+                    resolve(false);
+                    return;
+                }
+                try {
+                    const parsed = JSON.parse(data);
+                    resolve(parsed && parsed.status === 'ok');
+                } catch (e) {
+                    resolve(false);
+                }
+            });
         });
         req.on('error', (e) => {
             log('checkServerRunning error: ' + e.code + ' - ' + e.message);
@@ -1104,4 +1116,10 @@ async function main() {
     }
 }
 
-main();
+if (require.main === module) {
+    main();
+}
+
+module.exports = {
+    checkServerRunning
+};
