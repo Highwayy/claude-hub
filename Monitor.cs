@@ -154,11 +154,11 @@ class ClaudeHub : Form
             StartServer();
 
             this.Text = "Claude Hub";
-        this.Size = new Size(320, 150);
+        this.Size = new Size(320, 148);
         this.FormBorderStyle = FormBorderStyle.None;
         this.StartPosition = FormStartPosition.Manual;
         this.TopMost = true;
-        this.BackColor = Color.FromArgb(26, 26, 46);
+        this.BackColor = Color.FromArgb(18, 20, 28);
 
         LoadWindowPosition();
 
@@ -188,56 +188,58 @@ class ClaudeHub : Form
         Panel header = new Panel();
         header.Dock = DockStyle.Top;
         header.Height = 24;
-        header.BackColor = Color.FromArgb(102, 126, 234);
+        header.BackColor = Color.FromArgb(34, 38, 52);
         header.Cursor = Cursors.SizeAll;
         header.MouseDown += FormMouseDown;
 
         Label title = new Label();
-        title.Text = " Claude";
+        title.Text = " Claude Hub";
         title.Dock = DockStyle.Fill;
-        title.ForeColor = Color.White;
+        title.ForeColor = Color.FromArgb(236, 239, 246);
         title.Font = new Font("Segoe UI", 9, FontStyle.Bold);
         title.TextAlign = ContentAlignment.MiddleLeft;
         title.Cursor = Cursors.SizeAll;
         title.MouseDown += FormMouseDown;
 
         pinBtn = new Button();
-        pinBtn.Text = "📌";
+        pinBtn.Text = "\uE718";
         pinBtn.Width = 24;
         pinBtn.Height = 24;
         pinBtn.Dock = DockStyle.Right;
         pinBtn.FlatStyle = FlatStyle.Flat;
-        pinBtn.BackColor = Color.FromArgb(60, 60, 80);
-        pinBtn.ForeColor = Color.White;
-        pinBtn.Font = new Font("Segoe UI Symbol", 10);
+        pinBtn.BackColor = Color.FromArgb(42, 47, 63);
+        pinBtn.ForeColor = Color.FromArgb(218, 225, 236);
+        pinBtn.Font = new Font("Segoe MDL2 Assets", 10f);
         pinBtn.Cursor = Cursors.Hand;
         pinBtn.FlatAppearance.BorderSize = 0;
         pinBtn.Margin = new Padding(2);
+        pinBtn.TextAlign = ContentAlignment.MiddleCenter;
         ToolTip pinTip = new ToolTip();
         pinTip.SetToolTip(pinBtn, "钉在顶层");
         pinBtn.Click += (s, e) => {
             this.TopMost = !this.TopMost;
-            pinBtn.BackColor = this.TopMost ? Color.FromArgb(46, 204, 113) : Color.FromArgb(60, 60, 80);
+            pinBtn.BackColor = this.TopMost ? Color.FromArgb(80, 153, 106) : Color.FromArgb(42, 47, 63);
         };
         pinBtn.MouseEnter += (s, e) => {
-            pinBtn.BackColor = Color.FromArgb(80, 80, 100);
+            pinBtn.BackColor = Color.FromArgb(56, 63, 84);
         };
         pinBtn.MouseLeave += (s, e) => {
-            pinBtn.BackColor = this.TopMost ? Color.FromArgb(46, 204, 113) : Color.FromArgb(60, 60, 80);
+            pinBtn.BackColor = this.TopMost ? Color.FromArgb(80, 153, 106) : Color.FromArgb(42, 47, 63);
         };
 
         Button closeBtn = new Button();
-        closeBtn.Text = "✕";
+        closeBtn.Text = "\uE711";
         closeBtn.Width = 24;
         closeBtn.Height = 24;
         closeBtn.Dock = DockStyle.Right;
         closeBtn.FlatStyle = FlatStyle.Flat;
-        closeBtn.BackColor = Color.FromArgb(60, 60, 80);
-        closeBtn.ForeColor = Color.White;
-        closeBtn.Font = new Font("Segoe UI Symbol", 11);
+        closeBtn.BackColor = Color.FromArgb(42, 47, 63);
+        closeBtn.ForeColor = Color.FromArgb(218, 225, 236);
+        closeBtn.Font = new Font("Segoe MDL2 Assets", 8f);
         closeBtn.Cursor = Cursors.Hand;
         closeBtn.FlatAppearance.BorderSize = 0;
         closeBtn.Margin = new Padding(2);
+        closeBtn.TextAlign = ContentAlignment.MiddleCenter;
         ToolTip closeTip = new ToolTip();
         closeTip.SetToolTip(closeBtn, "关闭会话");
         closeBtn.Click += (s, e) => { timer.Stop(); animationTimer.Stop(); heartbeatTimer.Stop(); SaveWindowPosition(); this.Close(); };
@@ -245,25 +247,26 @@ class ClaudeHub : Form
             closeBtn.BackColor = Color.FromArgb(231, 76, 60);
         };
         closeBtn.MouseLeave += (s, e) => {
-            closeBtn.BackColor = Color.FromArgb(60, 60, 80);
+            closeBtn.BackColor = Color.FromArgb(42, 47, 63);
         };
 
         // Waiting 提示标签（初始隐藏）
         waitingLabel = new Label();
         waitingLabel.Text = " ⏳ Waiting for Input";
-        waitingLabel.Width = 150;
+        waitingLabel.Text = " Waiting";
+        waitingLabel.Width = 78;
         waitingLabel.Height = 24;
         waitingLabel.Dock = DockStyle.Left;
-        waitingLabel.BackColor = Color.FromArgb(243, 156, 18);
-        waitingLabel.ForeColor = Color.White;
-        waitingLabel.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+        waitingLabel.BackColor = Color.FromArgb(181, 127, 52);
+        waitingLabel.ForeColor = Color.FromArgb(255, 248, 229);
+        waitingLabel.Font = new Font("Segoe UI", 8, FontStyle.Bold);
         waitingLabel.Visible = false;
 
         header.Controls.AddRange(new Control[] { waitingLabel, closeBtn, pinBtn, title });
 
         contentPanel = new Panel();
         contentPanel.Dock = DockStyle.Fill;
-        contentPanel.BackColor = Color.FromArgb(26, 26, 46);
+        contentPanel.BackColor = Color.FromArgb(18, 20, 28);
         contentPanel.MouseDown += FormMouseDown;
 
         // Session 右键菜单（在 SessionControl 上显示）
@@ -379,7 +382,7 @@ class ClaudeHub : Form
 
         // 默认位置：主显示器右下角
         var workingArea = Screen.PrimaryScreen.WorkingArea;
-        this.Location = new Point(workingArea.Right - 340, workingArea.Bottom - 170);
+        this.Location = new Point(workingArea.Right - 340, workingArea.Bottom - 168);
         Log("Window positioned at default: " + this.Location.X + "," + this.Location.Y);
     }
 
@@ -454,6 +457,7 @@ class ClaudeHub : Form
 
     private void AnimationTick(object sender, EventArgs e)
     {
+        RememberExternalForegroundWindow();
         foreach (var ctrl in sessionControls)
         {
             ctrl.Animate();
@@ -607,7 +611,7 @@ class ClaudeHub : Form
                 Log("Creating SessionControl, count=" + sessionControls.Count);
                 var ctrl = new SessionControl();
                 ctrl.Left = 5;
-                ctrl.Width = 305;
+                ctrl.Width = this.ClientSize.Width - 10;
                 ctrl.OnToggleWindow = (sc) => {
                     Log("Toggle window: " + sc.SessionId);
                     ToggleClaudeWindow(sc.SessionId);
@@ -621,14 +625,18 @@ class ClaudeHub : Form
             int totalHeight = 0;
             for (int i = 0; i < sessions.Count; i++)
             {
+                int controlWidth = this.ClientSize.Width - 10;
+                int controlTop = totalHeight + 5;
+                if (sessionControls[i].Left != 5) sessionControls[i].Left = 5;
+                if (sessionControls[i].Width != controlWidth) sessionControls[i].Width = controlWidth;
+                if (sessionControls[i].Top != controlTop) sessionControls[i].Top = controlTop;
                 sessionControls[i].UpdateData(sessions[i]);
-                sessionControls[i].Top = totalHeight;
-                totalHeight += sessionControls[i].RequiredHeight + 5; // 5px gap
+                totalHeight += sessionControls[i].RequiredHeight + 4; // 4px gap
                 Log("Session " + i + ": height=" + sessionControls[i].RequiredHeight + ", top=" + totalHeight);
             }
 
-            // Adjust window height (header 24 + content + padding)
-            int windowHeight = 24 + totalHeight + 10;
+            // Adjust window height (header + content + padding)
+            int windowHeight = 24 + totalHeight + 8;
             this.Height = Math.Min(windowHeight, 500);
             Log("Window height=" + windowHeight);
 
@@ -793,6 +801,7 @@ class ClaudeHub : Form
     {
         Log("Toggle: sessionId=" + sessionId);
         IntPtr hwnd = IntPtr.Zero;
+        bool hasSessionHandle = false;
 
         try
         {
@@ -806,6 +815,7 @@ class ClaudeHub : Form
                 {
                     string handleStr = match.Groups[1].Value;
                     hwnd = new IntPtr(long.Parse(handleStr));
+                    hasSessionHandle = true;
                     Log("Read handle from file: " + hwnd);
                 }
             }
@@ -816,11 +826,18 @@ class ClaudeHub : Form
         {
             Log("Handle " + hwnd + " is invalid");
             hwnd = IntPtr.Zero;
+            hasSessionHandle = false;
         }
 
         if (hwnd == IntPtr.Zero)
         {
             hwnd = FindTerminalWindow();
+            if (hwnd == IntPtr.Zero && !hasSessionHandle)
+            {
+                Log("No session handle and terminal fallback is ambiguous; requesting recapture for " + sessionId);
+                RequestHandleRecapture(sessionId);
+                return;
+            }
         }
 
         if (hwnd != IntPtr.Zero && hwnd != this.Handle)
@@ -851,7 +868,8 @@ class ClaudeHub : Form
                 else if (state == WindowActivationState.ForegroundIsMonitor)
                 {
                     IntPtr lastHwnd;
-                    if (lastActivatedHandle.TryGetValue(sessionId, out lastHwnd) && lastHwnd == hwnd)
+                    if ((lastActivatedHandle.TryGetValue(sessionId, out lastHwnd) && lastHwnd == hwnd) ||
+                        WasRecentlyForegroundBeforeMonitor(hwnd))
                         MinimizeWindow(hwnd, sessionId);
                     else
                         ActivateWindow(hwnd, sessionId);
@@ -862,6 +880,30 @@ class ClaudeHub : Form
         else
         {
             Log("No valid terminal window found");
+        }
+    }
+
+    private void RequestHandleRecapture(string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId)) return;
+        try
+        {
+            var request = (HttpWebRequest)WebRequest.Create(Constants.SERVER_URL + "/session/" + sessionId + "/recapture-handle");
+            request.Proxy = null;
+            request.Timeout = Constants.HEALTH_TIMEOUT;
+            request.Method = "POST";
+            request.ContentType = "application/json";
+            byte[] data = Encoding.UTF8.GetBytes("{}");
+            request.ContentLength = data.Length;
+            using (var stream = request.GetRequestStream())
+            {
+                stream.Write(data, 0, data.Length);
+            }
+            using (var response = request.GetResponse()) { }
+        }
+        catch (Exception ex)
+        {
+            Log("RequestHandleRecapture error: " + ex.Message);
         }
     }
 
@@ -882,10 +924,34 @@ class ClaudeHub : Form
     // All terminal windows, indexed by order of discovery
     private List<IntPtr> allTerminalWindows = new List<IntPtr>();
 
-    private IntPtr lastFoundHandle = IntPtr.Zero;
-
     // 记住每个会话上次激活的窗口句柄，用于 toggle 逻辑
     private Dictionary<string, IntPtr> lastActivatedHandle = new Dictionary<string, IntPtr>();
+    private IntPtr lastExternalForegroundWindow = IntPtr.Zero;
+    private DateTime lastExternalForegroundAt = DateTime.MinValue;
+
+    private void RememberExternalForegroundWindow()
+    {
+        try
+        {
+            IntPtr foreground = GetComparableTopLevelWindow(NativeMethods.GetForegroundWindow());
+            IntPtr monitor = GetComparableTopLevelWindow(this.Handle);
+            if (foreground != IntPtr.Zero && foreground != monitor && NativeMethods.IsWindow(foreground))
+            {
+                lastExternalForegroundWindow = foreground;
+                lastExternalForegroundAt = DateTime.UtcNow;
+            }
+        }
+        catch { }
+    }
+
+    private bool WasRecentlyForegroundBeforeMonitor(IntPtr hwnd)
+    {
+        IntPtr target = GetComparableTopLevelWindow(hwnd);
+        if (target == IntPtr.Zero || target != lastExternalForegroundWindow)
+            return false;
+
+        return (DateTime.UtcNow - lastExternalForegroundAt).TotalMilliseconds <= 2000;
+    }
 
     // 查找终端窗口（Windows Terminal）
     private IntPtr FindTerminalWindow()
@@ -917,31 +983,8 @@ class ClaudeHub : Form
             return allTerminalWindows[0];
         }
 
-        // 多个窗口：找第一个可见的（最小化它）
-        // 如果都最小化了，返回最后一个最小化的（恢复它）
-        int visibleIndex = -1;
-        for (int i = 0; i < allTerminalWindows.Count; i++)
-        {
-            if (!NativeMethods.IsIconic(allTerminalWindows[i]))
-            {
-                visibleIndex = i;
-                break;
-            }
-        }
-
-        IntPtr result;
-        if (visibleIndex >= 0)
-        {
-            result = allTerminalWindows[visibleIndex];
-        }
-        else
-        {
-            // 都最小化了，返回之前找到的那个（用于恢复）
-            result = lastFoundHandle != IntPtr.Zero ? lastFoundHandle : allTerminalWindows[0];
-        }
-
-        lastFoundHandle = result;
-        return result;
+        Log("FindTerminalWindow: " + allTerminalWindows.Count + " terminal windows found, refusing to guess");
+        return IntPtr.Zero;
     }
 
     private void ForceForegroundWindow(IntPtr hwnd) {
@@ -1340,6 +1383,13 @@ class SessionControl : Panel
     private Color _borderColor = Color.FromArgb(243, 156, 18);
     private int _animTick = 0;
     private bool _expanded = false;
+    private Color _accentColor = Color.FromArgb(126, 148, 226);
+    private const int CardPadding = 5;
+    private const int ActionSize = 18;
+    private static readonly Color CardBack = Color.FromArgb(29, 33, 45);
+    private static readonly Color CardBackAlt = Color.FromArgb(35, 40, 54);
+    private static readonly Color TextPrimary = Color.FromArgb(235, 238, 245);
+    private static readonly Color TextMuted = Color.FromArgb(152, 161, 178);
 
     private string _fullTaskText = "";
     private ContextMenuStrip sessionContextMenu;  // Right-click menu for window rebind
@@ -1367,78 +1417,80 @@ class SessionControl : Panel
 
     public SessionControl()
     {
-        this.Height = 65;
-        this.BackColor = Color.FromArgb(36, 36, 56);
+        this.Height = 54;
+        this.BackColor = CardBack;
         this.Cursor = Cursors.Hand;
+        this.Padding = new Padding(0);
+        this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
 
         // Pixel horse indicator (24x20, 2px pixels - smaller)
         // Horse vertically centered relative to status + info lines (about 28px total)
         horse = new PixelHorse();
-        horse.Location = new Point(5, 5);  // Centered: (28-20)/2 + 4 = 8, but slightly up looks better
-        horse.Size = new Size(24, 20);
+        horse.Location = new Point(6, 5);  // Centered in the compact card header.
+        horse.Size = new Size(24, 24);
 
-        projectLbl = new Label() { Location = new Point(32, 4), Size = new Size(150, 14), ForeColor = Color.FromArgb(102, 126, 234), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8, FontStyle.Bold), AutoSize = true };
-        sepLbl = new Label() { Location = new Point(88, 4), Size = new Size(20, 14), ForeColor = Color.FromArgb(120, 120, 120), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8), Text = " | ", AutoSize = true };
-        branchLbl = new Label() { Location = new Point(100, 4), Size = new Size(100, 14), ForeColor = Color.FromArgb(46, 204, 113), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8), AutoSize = true };
+        projectLbl = new Label() { Location = new Point(33, 3), Size = new Size(132, 14), ForeColor = Color.FromArgb(126, 148, 226), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8, FontStyle.Bold), AutoSize = false, AutoEllipsis = true };
+        sepLbl = new Label() { Location = new Point(165, 3), Size = new Size(14, 14), ForeColor = Color.FromArgb(91, 99, 116), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8), Text = "|", AutoSize = false, TextAlign = ContentAlignment.MiddleCenter };
+        branchLbl = new Label() { Location = new Point(181, 3), Size = new Size(76, 14), ForeColor = Color.FromArgb(102, 176, 128), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8), AutoSize = false, AutoEllipsis = true };
 
         // 折叠按钮 - 放在消息右边
         expandBtn = new Label();
-        expandBtn.Text = "+";
-        expandBtn.Size = new Size(20, 20);
+        expandBtn.Text = "\uE70D";
+        expandBtn.Size = new Size(ActionSize, ActionSize);
         expandBtn.Location = new Point(283, 34);  // 初始位置，会在 UpdateLayout 中更新
-        expandBtn.ForeColor = Color.FromArgb(140, 140, 140);
-        expandBtn.BackColor = Color.FromArgb(50, 50, 70);
-        expandBtn.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+        expandBtn.ForeColor = Color.FromArgb(178, 187, 202);
+        expandBtn.BackColor = CardBackAlt;
+        expandBtn.Font = new Font("Segoe MDL2 Assets", 8.5f);
         expandBtn.Cursor = Cursors.Hand;
         expandBtn.TextAlign = ContentAlignment.MiddleCenter;
         expandBtn.MouseClick += (s, e) => { ToggleExpand(); };
 
         // 删除按钮 - 右上角
         deleteBtn = new Label();
-        deleteBtn.Text = "×";
-        deleteBtn.Size = new Size(20, 20);
+        deleteBtn.Text = "\uE74D";
+        deleteBtn.Size = new Size(ActionSize, ActionSize);
         deleteBtn.Location = new Point(283, 4);  // 右上角
-        deleteBtn.ForeColor = Color.FromArgb(231, 76, 60);
-        deleteBtn.BackColor = Color.FromArgb(50, 50, 70);
-        deleteBtn.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+        deleteBtn.ForeColor = Color.FromArgb(219, 116, 103);
+        deleteBtn.BackColor = CardBackAlt;
+        deleteBtn.Font = new Font("Segoe MDL2 Assets", 8.5f);
         deleteBtn.Cursor = Cursors.Hand;
         deleteBtn.TextAlign = ContentAlignment.MiddleCenter;
         deleteBtn.MouseClick += (s, e) => { DeleteSession(); };
 
         // 第二行：状态 + 模型 + 上下文信息（拆分为多个 Label）
-        statusLbl = new Label() { Location = new Point(32, 18), Size = new Size(65, 14), ForeColor = Color.FromArgb(180, 180, 180), BackColor = Color.Transparent, Font = new Font("Segoe UI", 8) };
+        statusLbl = new Label() { Location = new Point(33, 17), Size = new Size(66, 14), ForeColor = TextMuted, BackColor = Color.Transparent, Font = new Font("Segoe UI", 8, FontStyle.Bold) };
 
         // 模型 Label
         modelLbl = new Label();
-        modelLbl.Location = new Point(97, 18);
-        modelLbl.Size = new Size(80, 14);
-        modelLbl.ForeColor = Color.FromArgb(140, 140, 140);
+        modelLbl.Location = new Point(99, 17);
+        modelLbl.Size = new Size(78, 14);
+        modelLbl.ForeColor = TextMuted;
         modelLbl.BackColor = Color.Transparent;
         modelLbl.Font = new Font("Segoe UI", 8);
 
         // 分隔符 " | "
         ctxSepLbl = new Label();
-        ctxSepLbl.Location = new Point(177, 18);
-        ctxSepLbl.Size = new Size(20, 14);
-        ctxSepLbl.ForeColor = Color.FromArgb(120, 120, 120);
+        ctxSepLbl.Location = new Point(177, 17);
+        ctxSepLbl.Size = new Size(14, 14);
+        ctxSepLbl.ForeColor = Color.FromArgb(91, 99, 116);
         ctxSepLbl.BackColor = Color.Transparent;
         ctxSepLbl.Font = new Font("Segoe UI", 8);
-        ctxSepLbl.Text = " | ";
+        ctxSepLbl.Text = "|";
 
         // 上下文 Label（仅显示，无点击事件）
         contextLbl = new Label();
-        contextLbl.Location = new Point(197, 18);
-        contextLbl.Size = new Size(80, 14);
-        contextLbl.ForeColor = Color.FromArgb(140, 140, 140);
+        contextLbl.Location = new Point(191, 17);
+        contextLbl.Size = new Size(72, 14);
+        contextLbl.ForeColor = TextMuted;
         contextLbl.BackColor = Color.Transparent;
         contextLbl.Font = new Font("Segoe UI", 8);
 
         // 用户消息 Label（浅蓝色）- 固定一行，超出显示省略号
         userMsgLbl = new Label();
         userMsgLbl.Name = "userMsgLbl";
-        userMsgLbl.Location = new Point(5, 34);
-        userMsgLbl.Size = new Size(260, 18);
-        userMsgLbl.ForeColor = Color.FromArgb(100, 180, 255);
+        userMsgLbl.Location = new Point(CardPadding, 32);
+        userMsgLbl.Size = new Size(270, 16);
+        userMsgLbl.ForeColor = Color.FromArgb(116, 182, 224);
         userMsgLbl.BackColor = Color.Transparent;
         userMsgLbl.Font = new Font("Segoe UI", 8);
         userMsgLbl.AutoSize = false;
@@ -1447,11 +1499,11 @@ class SessionControl : Panel
 
         taskLbl = new Label();
         taskLbl.Name = "taskLbl";
-        taskLbl.Location = new Point(5, 62);
-        taskLbl.Size = new Size(260, 28);
-        taskLbl.ForeColor = Color.White;
+        taskLbl.Location = new Point(CardPadding, 52);
+        taskLbl.Size = new Size(270, 24);
+        taskLbl.ForeColor = TextPrimary;
         taskLbl.BackColor = Color.Transparent;
-        taskLbl.Font = new Font("Segoe UI", 9);
+        taskLbl.Font = new Font("Segoe UI", 8);
         taskLbl.AutoSize = false;
 
         toolTip = new ToolTip();
@@ -1477,8 +1529,8 @@ class SessionControl : Panel
         // 中间空隙: y=52 到 y=62
         clickLayerLbl = new Label();
         clickLayerLbl.Name = "clickLayerLbl";
-        clickLayerLbl.Location = new Point(5, 52);
-        clickLayerLbl.Size = new Size(260, 10);  // 只覆盖中间空隙
+        clickLayerLbl.Location = new Point(CardPadding, 47);
+        clickLayerLbl.Size = new Size(270, 5);  // Clickable spacer between message rows.
         clickLayerLbl.BackColor = Color.Transparent;
         clickLayerLbl.Cursor = Cursors.Hand;
         clickLayerLbl.MouseDown += toggleHandler;
@@ -1496,19 +1548,19 @@ class SessionControl : Panel
 
         // Create right-click context menu for window rebind
         sessionContextMenu = new ContextMenuStrip();
-        sessionContextMenu.BackColor = Color.FromArgb(36, 36, 56);
-        sessionContextMenu.ForeColor = Color.White;
+        sessionContextMenu.BackColor = CardBack;
+        sessionContextMenu.ForeColor = TextPrimary;
         sessionContextMenu.Font = new Font("Segoe UI", 9);
         sessionContextMenu.ShowImageMargin = false;  // Hide icon column
 
         ToolStripMenuItem rebindWindowItem = new ToolStripMenuItem("重新绑定窗口");
-        rebindWindowItem.BackColor = Color.FromArgb(36, 36, 56);
-        rebindWindowItem.ForeColor = Color.FromArgb(243, 156, 18);  // Orange to indicate action
+        rebindWindowItem.BackColor = CardBack;
+        rebindWindowItem.ForeColor = Color.FromArgb(217, 157, 82);  // Orange to indicate action
         rebindWindowItem.MouseHover += (s, e) => {
-            rebindWindowItem.BackColor = Color.FromArgb(50, 50, 70);
+            rebindWindowItem.BackColor = CardBackAlt;
         };
         rebindWindowItem.MouseLeave += (s, e) => {
-            rebindWindowItem.BackColor = Color.FromArgb(36, 36, 56);
+            rebindWindowItem.BackColor = CardBack;
         };
         rebindWindowItem.Click += (s, e) => {
             MarkSessionForRecapture();
@@ -1528,8 +1580,14 @@ class SessionControl : Panel
     private void ToggleExpand()
     {
         _expanded = !_expanded;
-        expandBtn.Text = _expanded ? "-" : "+";
+        expandBtn.Text = _expanded ? "\uE70E" : "\uE70D";
         UpdateLayout();
+    }
+
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (taskLbl != null) UpdateLayout();
     }
 
     private void UpdateLayout()
@@ -1537,7 +1595,27 @@ class SessionControl : Panel
         // 使用 SuspendLayout 减少重绘，避免卡顿
         this.SuspendLayout();
 
-        int y = 34;
+        int actionLeft = Math.Max(CardPadding, this.Width - CardPadding - ActionSize);
+        int textRight = Math.Max(120, actionLeft - CardPadding);
+        int textWidth = Math.Max(120, textRight - CardPadding);
+
+        horse.Location = new Point(CardPadding + 1, 5);
+        projectLbl.Left = 33;
+        projectLbl.Top = 3;
+        int metaRight = Math.Max(projectLbl.Left + 80, actionLeft - 4);
+        projectLbl.Width = Math.Max(72, Math.Min(132, metaRight - projectLbl.Left));
+        sepLbl.Left = projectLbl.Right + 2;
+        branchLbl.Left = sepLbl.Right + 2;
+        branchLbl.Width = Math.Max(34, metaRight - branchLbl.Left);
+
+        statusLbl.Left = 33;
+        statusLbl.Top = 17;
+        modelLbl.Left = statusLbl.Right + 4;
+        ctxSepLbl.Left = modelLbl.Right + 2;
+        contextLbl.Left = ctxSepLbl.Right + 2;
+        contextLbl.Width = Math.Max(42, metaRight - contextLbl.Left);
+
+        int y = 33;
 
         // 用户消息 - 固定一行，超出用省略号
         bool hasUserMsg = !string.IsNullOrEmpty(userMsgLbl.Text);
@@ -1545,15 +1623,16 @@ class SessionControl : Panel
         if (hasUserMsg)
         {
             userMsgLbl.Top = y;
-            userMsgLbl.Left = 5;
-            y += 24;  // 固定间距
+            userMsgLbl.Left = CardPadding;
+            userMsgLbl.Width = textWidth;
+            y += 20;  // 固定间距
         }
 
         // AI 消息 - 默认一行，超过一行显示展开按钮
         taskLbl.Top = y;
-        taskLbl.Left = 5;
-        taskLbl.Width = 260;
-        int fullHeight = CalculateTextHeight(_fullTaskText, 260);
+        taskLbl.Left = CardPadding;
+        taskLbl.Width = textWidth;
+        int fullHeight = CalculateTextHeight(_fullTaskText, textWidth);
         bool needExpand = fullHeight > 18;
 
         // 设置文本和高度
@@ -1564,28 +1643,35 @@ class SessionControl : Panel
         }
         else
         {
-            taskLbl.Height = 18;
+            taskLbl.Height = 16;
         }
 
         // 删除按钮 - 固定在右上角
-        deleteBtn.Location = new Point(283, 4);
+        deleteBtn.Location = new Point(actionLeft, 4);
         deleteBtn.BringToFront();
 
         // 展开按钮 - 在消息右边
         expandBtn.Visible = needExpand;
         if (needExpand)
         {
-            expandBtn.Left = 283;  // 右边界，和删除按钮同一列但不同行
+            expandBtn.Left = actionLeft;  // Same action column as delete.
             expandBtn.Top = y + 2;
             expandBtn.BringToFront();
         }
 
-        y += taskLbl.Height + 8;
+        clickLayerLbl.Left = CardPadding;
+        clickLayerLbl.Top = Math.Max(33, y - 5);
+        clickLayerLbl.Width = textWidth;
+
+        y += taskLbl.Height + 5;
 
         _requiredHeight = y;
         _requiredHeight = Math.Max(_requiredHeight, 50);
         _requiredHeight = Math.Min(_requiredHeight, 200);
-        this.Height = _requiredHeight;
+        if (this.Height != _requiredHeight)
+        {
+            this.Height = _requiredHeight;
+        }
 
         this.ResumeLayout();
     }
@@ -1593,6 +1679,15 @@ class SessionControl : Panel
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
+
+        using (SolidBrush accentBrush = new SolidBrush(_accentColor))
+        {
+            e.Graphics.FillRectangle(accentBrush, 0, 0, 3, this.Height);
+        }
+        using (Pen borderPen = new Pen(Color.FromArgb(52, 58, 74), 1))
+        {
+            e.Graphics.DrawRectangle(borderPen, 0, 0, this.Width - 1, this.Height - 1);
+        }
 
         if (_flashBorder && _animTick % 2 == 0)
         {
@@ -1608,14 +1703,14 @@ class SessionControl : Panel
     {
         flashCount++;
         if (flashCount % 2 == 0)
-            this.BackColor = Color.FromArgb(46, 204, 113);
+            this.BackColor = Color.FromArgb(42, 61, 49);
         else
-            this.BackColor = Color.FromArgb(36, 36, 56);
+            this.BackColor = CardBack;
 
         if (flashCount >= 6)
         {
             flashTimer.Stop();
-            this.BackColor = Color.FromArgb(36, 36, 56);
+            this.BackColor = CardBack;
         }
     }
 
@@ -1718,9 +1813,9 @@ class SessionControl : Panel
 
         // Visual indicator for pending recapture - orange project name
         if (data.needsHandleRecapture) {
-            projectLbl.ForeColor = Color.FromArgb(243, 156, 18);  // Orange
+            projectLbl.ForeColor = Color.FromArgb(217, 157, 82);  // Orange
         } else {
-            projectLbl.ForeColor = Color.FromArgb(102, 126, 234);  // Normal blue
+            projectLbl.ForeColor = Color.FromArgb(126, 148, 226);  // Normal blue
         }
 
         // 分支：竖线灰色，分支名绿色
@@ -1742,38 +1837,32 @@ class SessionControl : Panel
 
         if (hasModel)
         {
-            modelLbl.Text = data.model;
-            modelLbl.Visible = true;
-            modelLbl.BringToFront();
+            if (modelLbl.Text != data.model) modelLbl.Text = data.model;
+            if (!modelLbl.Visible) modelLbl.Visible = true;
         }
         else
         {
-            modelLbl.Visible = false;
+            if (modelLbl.Visible) modelLbl.Visible = false;
         }
 
         if (hasModel && hasContext)
         {
-            ctxSepLbl.Left = modelLbl.Right + 2;
-            ctxSepLbl.Visible = true;
+            if (!ctxSepLbl.Visible) ctxSepLbl.Visible = true;
         }
         else
         {
-            ctxSepLbl.Visible = false;
+            if (ctxSepLbl.Visible) ctxSepLbl.Visible = false;
         }
 
         if (hasContext)
         {
-            contextLbl.Text = data.context + " ctx";
-            if (hasModel)
-                contextLbl.Left = ctxSepLbl.Right + 2;
-            else
-                contextLbl.Left = statusLbl.Right + 2;
-            contextLbl.Visible = true;
-            contextLbl.BringToFront();
+            string contextText = data.context + " ctx";
+            if (contextLbl.Text != contextText) contextLbl.Text = contextText;
+            if (!contextLbl.Visible) contextLbl.Visible = true;
         }
         else
         {
-            contextLbl.Visible = false;
+            if (contextLbl.Visible) contextLbl.Visible = false;
         }
 
         // 用户消息
@@ -1810,77 +1899,86 @@ class SessionControl : Panel
 
         if (data.state == "idle") {
             statusLbl.Text = "Idle";
+            _accentColor = Color.FromArgb(116, 124, 140);
             if (_flashBorder) {
                 _flashBorder = false;
                 this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
+            statusLbl.ForeColor = TextMuted;
         }
         else if (data.state == "waiting") {
             statusLbl.Text = "Waiting";
+            _accentColor = Color.FromArgb(217, 157, 82);
+            _borderColor = Color.FromArgb(217, 157, 82);
             if (!_flashBorder && !_flashStoppedByClick) {
                 _flashBorder = true;
                 this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(243, 156, 18);
+            statusLbl.ForeColor = Color.FromArgb(227, 175, 98);
         }
         else if (data.state == "thinking") {
             statusLbl.Text = "Thinking";
+            _accentColor = Color.FromArgb(195, 151, 103);
             // 从 waiting 变为 thinking 时关闭闪烁并恢复颜色
             if (_flashBorder) {
                 _flashBorder = false;
                 this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
+            statusLbl.ForeColor = Color.FromArgb(202, 171, 134);
         }
         else if (data.state == "working") {
             statusLbl.Text = "Working";
+            _accentColor = Color.FromArgb(126, 148, 226);
             // 从 waiting 变为 working 时关闭闪烁并恢复颜色
             if (_flashBorder) {
                 _flashBorder = false;
                 this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
+            statusLbl.ForeColor = Color.FromArgb(158, 176, 232);
         }
         else if (data.state == "complete") {
             statusLbl.Text = "Done";
+            _accentColor = Color.FromArgb(102, 176, 128);
             // 从 waiting 变为 complete 时关闭闪烁并恢复颜色
             if (_flashBorder) {
                 _flashBorder = false;
                 this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(46, 204, 113);  // 绿色表示完成
+            statusLbl.ForeColor = Color.FromArgb(113, 190, 138);  // 绿色表示完成
             // Show completion message with checkmark
             if (!string.IsNullOrEmpty(data.task)) {
-                taskLbl.Text = "✓ " + _fullTaskText;
-                taskLbl.ForeColor = Color.FromArgb(46, 204, 113);
+                taskLbl.Text = "Done: " + _fullTaskText;
+                taskLbl.ForeColor = Color.FromArgb(127, 201, 151);
             }
         }
         else if (data.state == "error") {
             statusLbl.Text = "Error";
+            _accentColor = Color.FromArgb(201, 88, 79);
             // 从 waiting 变为 error 时关闭闪烁
             if (_flashBorder) {
                 _flashBorder = false;
                 this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(231, 76, 60);  // 红色表示错误
+            statusLbl.ForeColor = Color.FromArgb(224, 111, 100);  // 红色表示错误
         }
         else {
             statusLbl.Text = data.state;
+            _accentColor = Color.FromArgb(116, 124, 140);
             // 未知状态也关闭闪烁
             if (_flashBorder) {
                 _flashBorder = false;
                 this.Invalidate();
             }
-            statusLbl.ForeColor = Color.FromArgb(180, 180, 180);
+            statusLbl.ForeColor = TextMuted;
         }
 
         statusLbl.BringToFront();
 
         // Reset task label color for non-complete states
         if (data.state != "complete") {
-            taskLbl.ForeColor = Color.White;
+            taskLbl.ForeColor = TextPrimary;
         }
+        this.Invalidate();
     }
 
     private int CalculateTextHeight(string text, int width)
@@ -1921,7 +2019,7 @@ class PixelHorse : Control
 
     public PixelHorse()
     {
-        this.Size = new Size(24, 20);
+        this.Size = new Size(24, 24);
         _brush = new SolidBrush(Color.White);
 
         // Enable proper painting and transparent background
@@ -1953,31 +2051,30 @@ class PixelHorse : Control
         Color main, dark, mane, nose;
         GetStateColors(out main, out dark, out mane, out nose);
 
-        int p = PixelSize;
         int phase = _animTick % 4;
 
         switch (_state)
         {
             case "idle":
-                DrawHorseIdle(g, main, dark, mane, p);
+                DrawUnifiedHorse(g, main, dark, mane, nose, "idle", phase);
                 break;
             case "waiting":
-                DrawHorseWaiting(g, main, dark, mane, nose, p, phase);
+                DrawUnifiedHorse(g, main, dark, mane, nose, "waiting", phase);
                 break;
             case "thinking":
-                DrawHorseThinking(g, main, dark, mane, nose, p);
+                DrawUnifiedHorse(g, main, dark, mane, nose, "thinking", phase);
                 break;
             case "working":
-                DrawHorseWorking(g, main, dark, mane, nose, p, phase);
+                DrawUnifiedHorse(g, main, dark, mane, nose, "working", phase);
                 break;
             case "complete":
-                DrawHorseComplete(g, main, dark, mane, nose, p);
+                DrawUnifiedHorse(g, main, dark, mane, nose, "complete", phase);
                 break;
             case "error":
-                DrawHorseError(g, main, dark, mane, p);
+                DrawUnifiedHorse(g, main, dark, mane, nose, "error", phase);
                 break;
             default:
-                DrawHorseIdle(g, main, dark, mane, p);
+                DrawUnifiedHorse(g, main, dark, mane, nose, "idle", phase);
                 break;
         }
     }
@@ -1987,22 +2084,22 @@ class PixelHorse : Control
         switch (_state)
         {
             case "idle":
-                main = CIdle; dark = Color.FromArgb(90, 90, 90); mane = Color.FromArgb(106, 106, 106); nose = Color.FromArgb(106, 106, 106);
+                main = CIdle; dark = Color.FromArgb(88, 92, 102); mane = Color.FromArgb(106, 110, 120); nose = Color.FromArgb(106, 110, 120);
                 break;
             case "waiting":
-                main = CWaiting; dark = Color.FromArgb(138, 122, 74); mane = Color.FromArgb(160, 128, 64); nose = Color.FromArgb(160, 128, 64);
+                main = CWaiting; dark = Color.FromArgb(138, 112, 72); mane = Color.FromArgb(165, 124, 70); nose = Color.FromArgb(176, 132, 76);
                 break;
             case "thinking":
-                main = CThinking; dark = CDark; mane = CMane; nose = CNose;
+                main = CThinking; dark = Color.FromArgb(153, 116, 82); mane = CMane; nose = CNose;
                 break;
             case "working":
-                main = CWorking; dark = Color.FromArgb(122, 96, 64); mane = Color.FromArgb(138, 112, 64); nose = Color.FromArgb(160, 128, 64);
+                main = CWorking; dark = Color.FromArgb(116, 92, 67); mane = Color.FromArgb(134, 105, 70); nose = Color.FromArgb(167, 119, 72);
                 break;
             case "complete":
-                main = CComplete; dark = Color.FromArgb(58, 112, 74); mane = Color.FromArgb(74, 128, 90); nose = Color.FromArgb(74, 128, 90);
+                main = CComplete; dark = Color.FromArgb(57, 111, 74); mane = Color.FromArgb(78, 132, 91); nose = Color.FromArgb(78, 132, 91);
                 break;
             case "error":
-                main = CError; dark = Color.FromArgb(90, 42, 42); mane = Color.FromArgb(106, 58, 58); nose = Color.FromArgb(106, 58, 58);
+                main = CError; dark = Color.FromArgb(94, 48, 47); mane = Color.FromArgb(112, 64, 61); nose = Color.FromArgb(112, 64, 61);
                 break;
             default:
                 main = CIdle; dark = Color.FromArgb(90, 90, 90); mane = Color.FromArgb(106, 106, 106); nose = Color.FromArgb(106, 106, 106);
@@ -2014,6 +2111,154 @@ class PixelHorse : Control
     {
         _brush.Color = c;
         g.FillRectangle(_brush, x * PixelSize, y * PixelSize, w * PixelSize, h * PixelSize);
+    }
+
+    private void DrawUnifiedHorse(Graphics g, Color main, Color dark, Color mane, Color nose, string pose, int phase)
+    {
+        bool waiting = pose == "waiting";
+        bool working = pose == "working";
+        bool complete = pose == "complete";
+        bool error = pose == "error";
+
+        int lift = complete && phase < 2 ? -1 : 0;
+        int headY = 2 + lift;
+        int bodyY = 5 + lift;
+        Color bodyMain = complete && phase % 2 == 1 ? Color.FromArgb(105, 190, 130) : main;
+        Color bodyDark = complete && phase % 2 == 1 ? main : dark;
+
+        // Same silhouette for every state: ears, mane, head, neck, body, four legs, tail.
+        if (error)
+        {
+            DrawPixel(g, 2, headY, 2, 1, bodyMain);
+            DrawPixel(g, 7, headY, 2, 1, bodyMain);
+        }
+        else if (working)
+        {
+            DrawPixel(g, 3, headY - 2, 1, 1, bodyMain);
+            DrawPixel(g, 4, headY - 2, 1, 2, bodyDark);
+            DrawPixel(g, 6, headY - 2, 1, 2, bodyDark);
+            DrawPixel(g, 7, headY - 2, 1, 1, bodyMain);
+        }
+        else
+        {
+            Color ear = waiting && phase % 2 == 1 ? mane : bodyDark;
+            DrawPixel(g, 2, headY - 2, 1, 1, bodyMain);
+            DrawPixel(g, 3, headY - 2, 1, 2, ear);
+            DrawPixel(g, 7, headY - 2, 1, 2, ear);
+            DrawPixel(g, 8, headY - 2, 1, 1, bodyMain);
+        }
+
+        DrawPixel(g, 4, headY - 2, 3, 2, mane);
+        DrawPixel(g, 1, headY, 8, 3, bodyMain);
+        DrawEyes(g, pose, bodyDark, bodyMain, phase, headY);
+        DrawPixel(g, 2, headY + 2, 3, 1, nose);
+        DrawPixel(g, 5, bodyY - 1, 4, 1, bodyMain);
+        DrawPixel(g, 1, bodyY, 10, 3, bodyMain);
+        DrawLegs(g, pose, bodyDark, phase, bodyY);
+        DrawTail(g, pose, mane, bodyDark, phase, bodyY);
+    }
+
+    private void DrawEyes(Graphics g, string pose, Color dark, Color main, int phase, int headY)
+    {
+        if (pose == "idle")
+        {
+            DrawPixel(g, 2, headY + 1, 2, 1, dark);
+            DrawPixel(g, 5, headY + 1, 2, 1, dark);
+        }
+        else if (pose == "thinking" && phase == 1)
+        {
+            DrawPixel(g, 2, headY + 1, 2, 1, dark);
+            DrawPixel(g, 5, headY + 1, 2, 1, dark);
+        }
+        else if (pose == "complete")
+        {
+            DrawPixel(g, 2, headY + 1, 1, 1, dark);
+            DrawPixel(g, 6, headY + 1, 1, 1, dark);
+        }
+        else if (pose == "error")
+        {
+            DrawPixel(g, 2, headY, 1, 1, dark);
+            DrawPixel(g, 3, headY + 1, 1, 1, dark);
+            DrawPixel(g, 5, headY, 1, 1, dark);
+            DrawPixel(g, 6, headY + 1, 1, 1, dark);
+        }
+        else
+        {
+            DrawPixel(g, 2, headY + 1, 2, 1, CWhite);
+            DrawPixel(g, 5, headY + 1, 2, 1, CWhite);
+        }
+    }
+
+    private void DrawLegs(Graphics g, string pose, Color dark, int phase, int bodyY)
+    {
+        if (pose == "working")
+        {
+            int yA = phase % 2 == 0 ? bodyY + 1 : bodyY + 3;
+            int yB = phase % 2 == 0 ? bodyY + 3 : bodyY + 1;
+            DrawPixel(g, 2, yA, 2, 11 - yA, dark);
+            DrawPixel(g, 4, yB, 2, 11 - yB, dark);
+            DrawPixel(g, 7, yB, 2, 11 - yB, dark);
+            DrawPixel(g, 9, yA, 2, 11 - yA, dark);
+        }
+        else if (pose == "waiting")
+        {
+            int tap = phase == 0 ? bodyY + 2 : bodyY + 3;
+            DrawPixel(g, 2, tap, 2, 11 - tap, dark);
+            DrawPixel(g, 4, bodyY + 3, 2, 3, dark);
+            DrawPixel(g, 7, bodyY + 3, 2, 3, dark);
+            DrawPixel(g, 9, bodyY + 3, 2, 3, dark);
+        }
+        else if (pose == "complete")
+        {
+            DrawPixel(g, 2, bodyY + 2, 2, 3, dark);
+            DrawPixel(g, 4, bodyY + 3, 2, 2, dark);
+            DrawPixel(g, 7, bodyY + 2, 2, 3, dark);
+            DrawPixel(g, 9, bodyY + 3, 2, 2, dark);
+        }
+        else if (pose == "error")
+        {
+            DrawPixel(g, 2, bodyY + 3, 2, 3, dark);
+            DrawPixel(g, 4, bodyY + 4, 2, 2, dark);
+            DrawPixel(g, 7, bodyY + 4, 2, 2, dark);
+            DrawPixel(g, 9, bodyY + 3, 2, 3, dark);
+        }
+        else
+        {
+            DrawPixel(g, 2, bodyY + 3, 2, 3, dark);
+            DrawPixel(g, 4, bodyY + 3, 2, 3, dark);
+            DrawPixel(g, 7, bodyY + 3, 2, 3, dark);
+            DrawPixel(g, 9, bodyY + 3, 2, 3, dark);
+        }
+    }
+
+    private void DrawTail(Graphics g, string pose, Color mane, Color dark, int phase, int bodyY)
+    {
+        if (pose == "working")
+        {
+            DrawPixel(g, 10, bodyY - 1, 1, 2, mane);
+            DrawPixel(g, 11, bodyY - 2, 1, 3, dark);
+        }
+        else if (pose == "complete")
+        {
+            DrawPixel(g, 10, bodyY - 1, 1, 2, mane);
+            DrawPixel(g, 11, bodyY - 2, 1, 2, mane);
+        }
+        else if (pose == "waiting")
+        {
+            int tailY = phase < 2 ? bodyY - 1 : bodyY + 1;
+            DrawPixel(g, 10, bodyY, 1, 2, mane);
+            DrawPixel(g, 11, tailY, 1, 2, mane);
+        }
+        else if (pose == "error")
+        {
+            DrawPixel(g, 10, bodyY + 1, 1, 2, mane);
+            DrawPixel(g, 11, bodyY + 2, 1, 3, dark);
+        }
+        else
+        {
+            DrawPixel(g, 10, bodyY, 1, 3, mane);
+            DrawPixel(g, 11, bodyY + 1, 1, 3, mane);
+        }
     }
 
     // IDLE: Standing still, eyes closed, tail down
