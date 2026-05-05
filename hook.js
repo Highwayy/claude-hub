@@ -15,6 +15,7 @@ const PORT = parseInt(process.env.CLAUDE_MONITOR_PORT || '18989', 10);
 const HOOK_DIR = __dirname;
 const DATA_DIR = process.env.APPDATA || process.env.HOME;
 const DEBUG_FILE = path.join(DATA_DIR, 'claude-monitor', 'hook-debug.log');
+const SERVER_LOG_FILE = path.join(DATA_DIR, 'claude-monitor', 'server.log');
 const WINDOW_HANDLES_FILE = path.join(DATA_DIR, 'claude-monitor', 'window-handles.json');
 
 // 终端窗口类名常量
@@ -618,19 +619,25 @@ async function startServerAndMonitor() {
     // Start server.js in background
     const serverPath = path.join(HOOK_DIR, 'server.js');
     if (fs.existsSync(serverPath)) {
+        const logDir = path.dirname(SERVER_LOG_FILE);
+        if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+        const outFd = fs.openSync(SERVER_LOG_FILE, 'a');
+        const errFd = fs.openSync(SERVER_LOG_FILE, 'a');
         const serverChild = spawn('node', [serverPath], {
+            cwd: HOOK_DIR,
             detached: true,
-            stdio: 'ignore',
+            stdio: ['ignore', outFd, errFd],
             windowsHide: true
         });
+        fs.closeSync(outFd);
+        fs.closeSync(errFd);
         serverChild.unref();  // 让子进程完全独立
         log('Server started with pid: ' + serverChild.pid);
     }
 
-    // Wait for server to be ready
-    await new Promise(r => setTimeout(r, 1000));
-
-    startMonitor();
+    // server.js autostarts Monitor.exe; avoid a second start request during startup.
+    const ready = await checkServerRunningWithRetry(20);
+    log('Server ready after start: ' + ready);
 }
 
 function sendStatus(data) {

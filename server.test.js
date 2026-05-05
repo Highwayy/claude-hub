@@ -79,6 +79,12 @@ function stopServer(child) {
     });
 }
 
+function waitForExit(child) {
+    return new Promise((resolve) => {
+        child.once('exit', (code) => resolve(code));
+    });
+}
+
 test('deleted sessions stay deleted after server restart', async () => {
     const appData = tempDir('claude-monitor-server-');
     const port = 20000 + Math.floor(Math.random() * 20000);
@@ -119,4 +125,29 @@ test('reset stays empty after server restart', async () => {
     assert.deepEqual(debug.body.sessions, {});
     assert.deepEqual(debug.body.activeSessionIds, []);
     await stopServer(child);
+});
+
+test('port conflicts exit before autostart side effects run', async () => {
+    const appData = tempDir('claude-monitor-server-');
+    const port = 20000 + Math.floor(Math.random() * 20000);
+
+    const first = await startServer(appData, port);
+    const second = spawn(process.execPath, ['server.js'], {
+        cwd: __dirname,
+        env: {
+            ...process.env,
+            APPDATA: appData,
+            CLAUDE_MONITOR_PORT: String(port)
+        },
+        stdio: 'ignore',
+        windowsHide: true
+    });
+
+    try {
+        const exitCode = await waitForExit(second);
+        assert.equal(exitCode, 1);
+        assert.equal(fs.existsSync(path.join(appData, 'claude-monitor', 'codex-watcher.log')), false);
+    } finally {
+        await stopServer(first);
+    }
 });
