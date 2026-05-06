@@ -127,6 +127,65 @@ test('reset stays empty after server restart', async () => {
     await stopServer(child);
 });
 
+test('deleted codex sessions ignore stale watcher updates', async () => {
+    const appData = tempDir('claude-monitor-server-');
+    const port = 20000 + Math.floor(Math.random() * 20000);
+    const child = await startServer(appData, port);
+
+    try {
+        await request(port, 'POST', '/session', {
+            sessionId: 'codex:stale',
+            project: 'demo',
+            source: 'codex',
+            state: 'complete',
+            task: 'old task',
+            eventTimestamp: 1
+        });
+        await request(port, 'DELETE', '/session/codex%3Astale');
+
+        await request(port, 'POST', '/session', {
+            sessionId: 'codex:stale',
+            project: 'demo',
+            source: 'codex',
+            state: 'complete',
+            task: 'old task replayed',
+            eventTimestamp: 1
+        });
+
+        let status = await request(port, 'GET', '/status');
+        assert.deepEqual(status.body.sessions, []);
+
+        await request(port, 'POST', '/session', {
+            sessionId: 'codex:stale',
+            project: 'demo',
+            source: 'codex',
+            state: 'working',
+            task: 'late background output',
+            eventTimestamp: Date.now() + 1000
+        });
+
+        status = await request(port, 'GET', '/status');
+        assert.deepEqual(status.body.sessions, []);
+
+        await request(port, 'POST', '/session', {
+            sessionId: 'codex:stale',
+            project: 'demo',
+            source: 'codex',
+            state: 'working',
+            task: 'new task',
+            userMessage: 'new prompt',
+            eventKind: 'user',
+            eventTimestamp: Date.now() + 1000
+        });
+
+        status = await request(port, 'GET', '/status');
+        assert.equal(status.body.sessions.length, 1);
+        assert.equal(status.body.sessions[0].task, 'new task');
+    } finally {
+        await stopServer(child);
+    }
+});
+
 test('port conflicts exit before autostart side effects run', async () => {
     const appData = tempDir('claude-monitor-server-');
     const port = 20000 + Math.floor(Math.random() * 20000);

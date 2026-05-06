@@ -88,11 +88,13 @@ function parseCodexJsonlLine(line) {
     }
 
     const payload = entry.payload || {};
+    const eventTimestamp = entry.timestamp ? Date.parse(entry.timestamp) : null;
 
     if (entry.type === 'session_meta') {
         return {
             kind: 'meta',
-            cwd: payload.cwd || null
+            cwd: payload.cwd || null,
+            eventTimestamp
         };
     }
 
@@ -101,7 +103,8 @@ function parseCodexJsonlLine(line) {
             kind: 'meta',
             cwd: payload.cwd || null,
             model: payload.model || null,
-            effort: payload.effort || null
+            effort: payload.effort || null,
+            eventTimestamp
         };
     }
 
@@ -114,7 +117,8 @@ function parseCodexJsonlLine(line) {
             userMessage,
             state: 'working',
             task: 'Processing request...',
-            message: 'Processing user request...'
+            message: 'Processing user request...',
+            eventTimestamp
         };
     }
 
@@ -126,7 +130,8 @@ function parseCodexJsonlLine(line) {
             kind: 'assistant',
             state: isFinalPhase(payload.phase) ? 'complete' : 'working',
             task,
-            message: isFinalPhase(payload.phase) ? 'Ready' : 'Working'
+            message: isFinalPhase(payload.phase) ? 'Ready' : 'Working',
+            eventTimestamp
         };
     }
 
@@ -135,7 +140,8 @@ function parseCodexJsonlLine(line) {
             kind: 'activity',
             state: 'thinking',
             task: 'Thinking...',
-            message: 'Thinking'
+            message: 'Thinking',
+            eventTimestamp
         };
     }
 
@@ -144,7 +150,8 @@ function parseCodexJsonlLine(line) {
             kind: 'activity',
             state: 'working',
             task: 'Using ' + truncate(displayToolName(payload.name), 80) + '...',
-            message: 'Working'
+            message: 'Working',
+            eventTimestamp
         };
     }
 
@@ -154,7 +161,8 @@ function parseCodexJsonlLine(line) {
             kind: 'activity',
             state: 'working',
             task: 'Ran: ' + command,
-            message: 'Working'
+            message: 'Working',
+            eventTimestamp
         };
     }
 
@@ -162,7 +170,8 @@ function parseCodexJsonlLine(line) {
         return {
             kind: 'activity',
             state: 'complete',
-            message: 'Ready'
+            message: 'Ready',
+            eventTimestamp
         };
     }
 
@@ -174,7 +183,8 @@ function parseCodexJsonlLine(line) {
             kind: 'assistant',
             state: isFinalPhase(payload.phase) ? 'complete' : 'working',
             task,
-            message: isFinalPhase(payload.phase) ? 'Ready' : 'Working'
+            message: isFinalPhase(payload.phase) ? 'Ready' : 'Working',
+            eventTimestamp
         };
     }
 
@@ -184,7 +194,8 @@ function parseCodexJsonlLine(line) {
 
         return {
             kind: 'meta',
-            context
+            context,
+            eventTimestamp
         };
     }
 
@@ -229,6 +240,8 @@ function applyCodexEvent(base, event) {
     if (event.message !== undefined) payload.message = event.message;
     if (event.context !== undefined) payload.context = event.context;
     if (event.userMessage !== undefined) payload.userMessage = event.userMessage;
+    if (event.kind) payload.eventKind = event.kind;
+    if (Number.isFinite(event.eventTimestamp)) payload.eventTimestamp = event.eventTimestamp;
     if (event.state === 'working') payload.progress = 50;
     if (event.state === 'complete') payload.progress = 100;
 

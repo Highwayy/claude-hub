@@ -27,6 +27,7 @@ function logLifecycle(message) {
 // Multi-session support
 let sessions = {};
 let activeSessionIds = new Set();
+let deletedCodexSessions = {};
 let taskHistory = [];
 let showWindowFlag = false;  // Flag to signal Monitor to show window
 const MAX_HISTORY = 50;
@@ -194,12 +195,14 @@ function loadSessions() {
             const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
             sessions = data.sessions || {};
             activeSessionIds = new Set(data.activeSessionIds || []);
+            deletedCodexSessions = data.deletedCodexSessions || {};
             console.log('Loaded', activeSessionIds.size, 'sessions from file');
         }
     } catch (e) {
         console.error('Failed to load sessions:', e.message);
         sessions = {};
         activeSessionIds = new Set();
+        deletedCodexSessions = {};
     }
 }
 
@@ -214,6 +217,7 @@ function saveSessions() {
             const data = {
                 sessions: sessions,
                 activeSessionIds: Array.from(activeSessionIds),
+                deletedCodexSessions: deletedCodexSessions,
                 savedAt: Date.now()
             };
             fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
@@ -231,6 +235,7 @@ function saveSessionsImmediate() {
         const data = {
             sessions: sessions,
             activeSessionIds: Array.from(activeSessionIds),
+            deletedCodexSessions: deletedCodexSessions,
             savedAt: Date.now()
         };
         fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
@@ -280,6 +285,22 @@ function getOrCreateSession(sessionId, project) {
         };
     }
     return sessions[sessionId];
+}
+
+function isCodexSessionId(sessionId) {
+    return typeof sessionId === 'string' && sessionId.startsWith('codex:');
+}
+
+function shouldIgnoreDeletedCodexSession(sessionId, source, eventTimestamp, eventKind) {
+    if (source !== 'codex' && !isCodexSessionId(sessionId)) return false;
+    const deleted = deletedCodexSessions[sessionId];
+    if (!deleted) return false;
+
+    const eventTime = Number(eventTimestamp);
+    if (!Number.isFinite(eventTime) || eventTime <= deleted.deletedAt || eventKind !== 'user') return true;
+
+    delete deletedCodexSessions[sessionId];
+    return false;
 }
 
 // Clean old sessions (older than 60 minutes of inactivity)
@@ -387,8 +408,13 @@ app.get('/status', (req, res) => {
 
 // Update single session (from hooks)
 app.post('/session', (req, res) => {
-    const { sessionId, project, state, task, progress, message, windowHandle, model, effort, source, context, branch, userMessage } = req.body;
+    const { sessionId, project, state, task, progress, message, windowHandle, model, effort, source, context, branch, userMessage, eventTimestamp, eventKind } = req.body;
     const sid = sessionId || 'default';
+    if (shouldIgnoreDeletedCodexSession(sid, source, eventTimestamp, eventKind)) {
+        res.json({ success: true, ignored: true });
+        return;
+    }
+
     const session = getOrCreateSession(sid, project);
 
     // Auto-add to active sessions
@@ -427,8 +453,12 @@ app.post('/session', (req, res) => {
 app.delete('/session/:id', (req, res) => {
     const sid = req.params.id;
     if (sessions[sid]) {
+        const wasCodex = sessions[sid].source === 'codex' || isCodexSessionId(sid);
         delete sessions[sid];
         activeSessionIds.delete(sid);
+        if (wasCodex) {
+            deletedCodexSessions[sid] = { deletedAt: Date.now() };
+        }
         saveSessionsImmediate();
         res.json({ success: true });
     } else {
@@ -551,6 +581,7 @@ app.post('/config', (req, res) => {
 app.post('/reset', (req, res) => {
     sessions = {};
     activeSessionIds = new Set();
+    deletedCodexSessions = {};
     saveSessionsImmediate();
     res.json({ success: true });
 });

@@ -44,7 +44,8 @@ test('parseCodexJsonlLine maps user messages', () => {
         userMessage: 'please wire Codex sessions in',
         state: 'working',
         task: 'Processing request...',
-        message: 'Processing user request...'
+        message: 'Processing user request...',
+        eventTimestamp: 1777605199652
     });
 });
 
@@ -63,7 +64,8 @@ test('parseCodexJsonlLine maps assistant commentary messages', () => {
         kind: 'assistant',
         state: 'working',
         task: 'I will add a Codex watcher.',
-        message: 'Working'
+        message: 'Working',
+        eventTimestamp: 1777605304290
     });
 });
 
@@ -81,7 +83,8 @@ test('parseCodexJsonlLine maps reasoning to thinking state', () => {
         kind: 'activity',
         state: 'thinking',
         task: 'Thinking...',
-        message: 'Thinking'
+        message: 'Thinking',
+        eventTimestamp: 1777605304290
     });
 });
 
@@ -101,7 +104,8 @@ test('parseCodexJsonlLine maps function calls to working state', () => {
         kind: 'activity',
         state: 'working',
         task: 'Using shell_command...',
-        message: 'Working'
+        message: 'Working',
+        eventTimestamp: 1777605304290
     });
 });
 
@@ -120,7 +124,8 @@ test('parseCodexJsonlLine maps command results to working state with command tex
         kind: 'activity',
         state: 'working',
         task: 'Ran: npm test',
-        message: 'Working'
+        message: 'Working',
+        eventTimestamp: 1777605304290
     });
 });
 
@@ -140,7 +145,8 @@ test('parseCodexJsonlLine maps final assistant response items to complete', () =
         kind: 'assistant',
         state: 'complete',
         task: 'Codex watcher is connected.',
-        message: 'Ready'
+        message: 'Ready',
+        eventTimestamp: 1777605304290
     });
 });
 
@@ -156,7 +162,8 @@ test('parseCodexJsonlLine maps task completion event to complete', () => {
     assert.deepEqual(parseCodexJsonlLine(line), {
         kind: 'activity',
         state: 'complete',
-        message: 'Ready'
+        message: 'Ready',
+        eventTimestamp: 1777605304290
     });
 });
 
@@ -175,7 +182,8 @@ test('parseCodexJsonlLine maps turn context metadata including effort', () => {
         kind: 'meta',
         cwd: 'D:\\Projects\\claude-monitor',
         model: 'gpt-5.5',
-        effort: 'high'
+        effort: 'high',
+        eventTimestamp: 1777605199652
     });
 });
 
@@ -223,7 +231,8 @@ test('applyCodexEvent merges event data into session payload', () => {
         task: 'Processing request...',
         message: 'Processing user request...',
         progress: 50,
-        userMessage: 'add codex sessions'
+        userMessage: 'add codex sessions',
+        eventKind: 'user'
     });
 });
 
