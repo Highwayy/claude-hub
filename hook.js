@@ -336,6 +336,20 @@ function log(msg) {
     } catch (e) {}
 }
 
+function buildDetachedServerLaunch(serverPath, workingDir) {
+    const launcherPath = path.join(workingDir, 'server-launcher.js');
+    return {
+        fileName: process.execPath,
+        args: [launcherPath],
+        options: {
+            cwd: workingDir,
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: true
+        }
+    };
+}
+
 function checkServerRunning() {
     return new Promise((resolve) => {
         const req = http.request({
@@ -621,18 +635,10 @@ async function startServerAndMonitor() {
     if (fs.existsSync(serverPath)) {
         const logDir = path.dirname(SERVER_LOG_FILE);
         if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-        const outFd = fs.openSync(SERVER_LOG_FILE, 'a');
-        const errFd = fs.openSync(SERVER_LOG_FILE, 'a');
-        const serverChild = spawn('node', [serverPath], {
-            cwd: HOOK_DIR,
-            detached: true,
-            stdio: ['ignore', outFd, errFd],
-            windowsHide: true
-        });
-        fs.closeSync(outFd);
-        fs.closeSync(errFd);
+        const launch = buildDetachedServerLaunch(serverPath, HOOK_DIR);
+        const serverChild = spawn(launch.fileName, launch.args, launch.options);
         serverChild.unref();  // 让子进程完全独立
-        log('Server started with pid: ' + serverChild.pid);
+        log('Server launcher started with pid: ' + serverChild.pid);
     }
 
     // server.js autostarts Monitor.exe; avoid a second start request during startup.
@@ -1128,5 +1134,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-    checkServerRunning
+    checkServerRunning,
+    buildDetachedServerLaunch
 };

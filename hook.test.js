@@ -44,3 +44,15 @@ test('checkServerRunning accepts monitor health response', async () => {
         server.close();
     }
 });
+
+test('buildDetachedServerLaunch starts the Node launcher', () => {
+    const { buildDetachedServerLaunch } = loadHookForPort(18989);
+    const launch = buildDetachedServerLaunch(
+        'D:\\Projects\\claude-monitor\\server.js',
+        'D:\\Projects\\claude-monitor'
+    );
+
+    assert.equal(launch.fileName, process.execPath);
+    assert.equal(launch.options.detached, true);
+    assert.match(launch.args.join(' '), /server-launcher\.js/);
+});

@@ -8,10 +8,20 @@ const DATA_DIR = path.join(process.env.APPDATA || process.env.HOME, 'claude-moni
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+const SERVER_LIFECYCLE_LOG_FILE = path.join(DATA_DIR, 'server-lifecycle.log');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function logLifecycle(message) {
+    try {
+        fs.appendFileSync(
+            SERVER_LIFECYCLE_LOG_FILE,
+            `[${new Date().toISOString()}] pid=${process.pid} ppid=${process.ppid} ${message}\n`
+        );
+    } catch (e) {}
 }
 
 // Multi-session support
@@ -648,6 +658,7 @@ app.post('/start-monitor', (req, res) => {
 // If you need to shutdown, use SIGINT/SIGTERM or manual process kill
 
 const server = app.listen(PORT, () => {
+    logLifecycle(`listening port=${PORT}`);
     console.log(`Monitor server: http://localhost:${PORT}`);
     // 启动时自动启动 Monitor.exe
     if (process.env.CLAUDE_MONITOR_DISABLE_AUTOSTART !== '1') {
@@ -662,6 +673,7 @@ server.headersTimeout = 66000;
 
 // Handle server errors
 server.on('error', (err) => {
+    logLifecycle(`server error code=${err.code || ''} message=${err.message}`);
     if (err.code === 'EADDRINUSE') {
         console.error('Port already in use, exiting');
         process.exit(1);
@@ -671,15 +683,18 @@ server.on('error', (err) => {
 
 // Global error handlers
 process.on('uncaughtException', (err) => {
+    logLifecycle(`uncaughtException ${err.stack || err.message}`);
     console.error('Uncaught exception:', err.message);
     // Don't exit, keep server running
 });
 
 process.on('unhandledRejection', (reason) => {
+    logLifecycle(`unhandledRejection ${reason && reason.stack ? reason.stack : reason}`);
     console.error('Unhandled rejection:', reason);
 });
 
 process.on('SIGINT', () => {
+    logLifecycle('SIGINT received');
     saveHistory();
     saveSessionsImmediate();
     stopCodexWatcherProcess();
@@ -688,9 +703,18 @@ process.on('SIGINT', () => {
 });
 
 process.on('SIGTERM', () => {
+    logLifecycle('SIGTERM received');
     saveHistory();
     saveSessionsImmediate();
     stopCodexWatcherProcess();
     server.close();
     process.exit();
+});
+
+process.on('beforeExit', (code) => {
+    logLifecycle(`beforeExit code=${code}`);
+});
+
+process.on('exit', (code) => {
+    logLifecycle(`exit code=${code}`);
 });
